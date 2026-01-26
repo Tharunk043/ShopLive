@@ -11,21 +11,15 @@ export default function Dashboard({ onLogout }) {
   const [images, setImages] = useState({}); // 🔥 productId -> imageURL
   const navigate = useNavigate();
 
- useEffect(() => {
+useEffect(() => {
   loadOrders();
 
-  const interval = setInterval(() => {
-    loadOrders();
-  }, 5000); // refresh every 5 seconds
+  const onFocus = () => loadOrders();
+  window.addEventListener("focus", onFocus);
 
-  return () => {
-    clearInterval(interval);
-    Object.values(images).forEach((url) => {
-      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
-    });
-  };
-  // eslint-disable-next-line
+  return () => window.removeEventListener("focus", onFocus);
 }, []);
+
 
 
   // =============================
