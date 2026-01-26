@@ -47,26 +47,35 @@ export default function Dashboard({ onLogout }) {
   // LOAD ORDERS
   // =============================
   async function loadOrders() {
-    try {
-      const res = await apiFetch("/customer/my/orders");
+  try {
+    const res = await apiFetch("/customer/my/orders");
+    if (!res.ok) throw new Error("Unauthorized");
 
-      if (!res.ok) {
-        throw new Error("Unauthorized");
-      }
+    const data = await res.json();
+    setOrders(data);
 
-      const data = await res.json();
-      setOrders(data);
+    setImages((prev) => {
+      const updated = { ...prev };
 
-      // 🔥 Load all images securely
-      const imageMap = {};
       for (const o of data) {
-        imageMap[o.productId] = await loadProductImage(o.productId);
+        // Only fetch image if we don't already have it
+        if (!updated[o.productId]) {
+          loadProductImage(o.productId).then((url) => {
+            setImages((curr) => ({
+              ...curr,
+              [o.productId]: url
+            }));
+          });
+        }
       }
-      setImages(imageMap);
-    } catch {
-      logout();
-    }
+
+      return updated;
+    });
+  } catch {
+    logout();
   }
+}
+
 
   // =============================
   // LOGOUT
@@ -96,11 +105,12 @@ export default function Dashboard({ onLogout }) {
             style={styles.card}
           >
             <img
-              src={images[o.productId]}
-              alt={o.name}
-              style={styles.img}
-              loading="lazy"
-            />
+  src={`${import.meta.env.VITE_API_BASE_URL}/products/${o.productId}/image`}
+  alt={o.name}
+  style={styles.img}
+  loading="lazy"
+/>
+
 
             <h3>{o.name}</h3>
             <p>Qty: {o.count}</p>
