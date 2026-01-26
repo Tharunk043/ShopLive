@@ -354,8 +354,7 @@ const styles = {
   height: 4,
   background: "#334155",
   borderRadius: 5,
-  overflow: "hidden",
-  zIndex: -1
+  overflow: "hidden"
 },
 lineFill: {
   height: "100%",
