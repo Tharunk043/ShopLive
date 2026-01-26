@@ -331,7 +331,8 @@ const styles = {
     width: 18,
     height: 18,
     borderRadius: "50%",
-    marginBottom: 5
+    marginBottom: 5,
+    zIndex:2
   },
   line: {
     position: "absolute",
