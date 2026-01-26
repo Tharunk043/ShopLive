@@ -172,37 +172,46 @@ export default function Dashboard({ onLogout }) {
               <h2>📦 Order Tracking</h2>
 
               {/* STATUS TRACKER */}
-              <div style={styles.tracker}>
-                {STATUS_FLOW.map((step, i) => {
-                  const active =
-                    STATUS_FLOW.indexOf(
-                      selectedOrder.status || "PLACED"
-                    ) >= i;
+<div style={styles.tracker}>
+  {STATUS_FLOW.map((step, i) => {
+    const currentIndex = STATUS_FLOW.indexOf(
+      selectedOrder.status || "PLACED"
+    );
 
-                  return (
-                    <div key={step} style={styles.step}>
-                      <div
-                        style={{
-                          ...styles.circle,
-                          background: active ? "#22c55e" : "#334155"
-                        }}
-                      />
-                      <span style={{ fontSize: "0.8rem" }}>{step}</span>
+    const active = currentIndex >= i;
+    const lineActive = currentIndex > i;
 
-                      {i < STATUS_FLOW.length - 1 && (
-                        <div
-                          style={{
-                            ...styles.line,
-                            background: active
-                              ? "#22c55e"
-                              : "#334155"
-                          }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+    return (
+      <div key={step} style={styles.step}>
+        {/* CIRCLE */}
+        <motion.div
+          initial={{ scale: 0.8 }}
+          animate={{
+            scale: active ? 1.2 : 1,
+            backgroundColor: active ? "#22c55e" : "#334155"
+          }}
+          transition={{ type: "spring", stiffness: 300 }}
+          style={styles.circle}
+        />
+
+        <span style={{ fontSize: "0.8rem" }}>{step}</span>
+
+        {/* LINE */}
+        {i < STATUS_FLOW.length - 1 && (
+          <div style={styles.lineBase}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: lineActive ? "100%" : "0%" }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
+              style={styles.lineFill}
+            />
+          </div>
+        )}
+      </div>
+    );
+  })}
+</div>
+
 
               {/* ORDER DETAILS */}
               <div style={styles.details}>
@@ -336,5 +345,22 @@ const styles = {
     background: "#0f172a",
     padding: 20,
     borderRadius: 15
-  }
+  },
+  lineBase: {
+  position: "absolute",
+  top: 10,
+  left: "50%",
+  width: "100%",
+  height: 4,
+  background: "#334155",
+  borderRadius: 5,
+  overflow: "hidden",
+  zIndex: -1
+},
+lineFill: {
+  height: "100%",
+  background: "#22c55e",
+  borderRadius: 5
+}
+
 };
