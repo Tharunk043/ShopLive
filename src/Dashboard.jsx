@@ -10,8 +10,11 @@ export default function Dashboard({ onLogout }) {
   const [orders, setOrders] = useState([]);
   const [images, setImages] = useState({});
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [animStep, setAnimStep] = useState(0);
 
   const navigate = useNavigate();
+
+  const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
 
   useEffect(() => {
     loadOrders();
@@ -21,6 +24,28 @@ export default function Dashboard({ onLogout }) {
 
     return () => window.removeEventListener("focus", onFocus);
   }, []);
+
+  // =============================
+  // STEP-BY-STEP TRACKER ANIMATION
+  // =============================
+  useEffect(() => {
+    if (!selectedOrder) return;
+
+    const run = async () => {
+      setAnimStep(0);
+
+      const targetIndex = STATUS_FLOW.indexOf(
+        (selectedOrder.status || "PLACED").toUpperCase()
+      );
+
+      for (let i = 0; i <= targetIndex; i++) {
+        setAnimStep(i);
+        await new Promise((res) => setTimeout(res, 700));
+      }
+    };
+
+    run();
+  }, [selectedOrder]);
 
   // =============================
   // LOAD PRODUCT IMAGE (JWT SAFE)
@@ -78,8 +103,6 @@ export default function Dashboard({ onLogout }) {
     navigate("/login", { replace: true });
   }
 
-  const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
-
   // =============================
   // UI
   // =============================
@@ -127,7 +150,7 @@ export default function Dashboard({ onLogout }) {
                       : "#f59e0b"
                 }}
               >
-                {o.status || "PLACED"}
+                {(o.status || "PLACED").toUpperCase()}
               </span>
             </p>
 
@@ -172,46 +195,67 @@ export default function Dashboard({ onLogout }) {
               <h2>📦 Order Tracking</h2>
 
               {/* STATUS TRACKER */}
-<div style={styles.tracker}>
-  {STATUS_FLOW.map((step, i) => {
-    const currentIndex = STATUS_FLOW.indexOf(
-      selectedOrder.status || "PLACED"
-    );
+              <div style={styles.tracker}>
+                {STATUS_FLOW.map((step, i) => {
+                  const reached = animStep >= i;
+                  const lineReached = animStep > i;
+                  const isLast =
+                    i === animStep &&
+                    i === STATUS_FLOW.length - 1;
 
-    const active = currentIndex >= i;
-    const lineActive = currentIndex > i;
+                  return (
+                    <div key={step} style={styles.step}>
+                      {/* CIRCLE */}
+                      <motion.div
+                        animate={
+                          isLast
+                            ? {
+                                scale: [1, 1.3, 1],
+                                boxShadow: [
+                                  "0 0 0px #22c55e",
+                                  "0 0 12px #22c55e",
+                                  "0 0 0px #22c55e"
+                                ],
+                                backgroundColor: "#22c55e"
+                              }
+                            : {
+                                scale: reached ? [1, 1.4, 1] : 1,
+                                backgroundColor: reached
+                                  ? "#22c55e"
+                                  : "#334155"
+                              }
+                        }
+                        transition={{
+                          duration: isLast ? 1.2 : 0.4,
+                          repeat: isLast ? Infinity : 0
+                        }}
+                        style={styles.circle}
+                      />
 
-    return (
-      <div key={step} style={styles.step}>
-        {/* CIRCLE */}
-        <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{
-            scale: active ? 1.2 : 1,
-            backgroundColor: active ? "#22c55e" : "#334155"
-          }}
-          transition={{ type: "spring", stiffness: 300 }}
-          style={styles.circle}
-        />
+                      <span style={{ fontSize: "0.8rem" }}>
+                        {step}
+                      </span>
 
-        <span style={{ fontSize: "0.8rem" }}>{step}</span>
-
-        {/* LINE */}
-        {i < STATUS_FLOW.length - 1 && (
-          <div style={styles.lineBase}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: lineActive ? "100%" : "0%" }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-              style={styles.lineFill}
-            />
-          </div>
-        )}
-      </div>
-    );
-  })}
-</div>
-
+                      {/* LINE */}
+                      {i < STATUS_FLOW.length - 1 && (
+                        <div style={styles.lineBase}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{
+                              width: lineReached ? "100%" : "0%"
+                            }}
+                            transition={{
+                              duration: 0.6,
+                              ease: "easeInOut"
+                            }}
+                            style={styles.lineFill}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* ORDER DETAILS */}
               <div style={styles.details}>
@@ -228,11 +272,14 @@ export default function Dashboard({ onLogout }) {
                   <b>Price:</b> ₹{selectedOrder.price}
                 </p>
                 <p>
-                  <b>Status:</b> {selectedOrder.status || "PLACED"}
+                  <b>Status:</b>{" "}
+                  {(selectedOrder.status || "PLACED").toUpperCase()}
                 </p>
                 <p>
                   <b>Ordered On:</b>{" "}
-                  {new Date(selectedOrder.createdAt).toLocaleString()}
+                  {new Date(
+                    selectedOrder.createdAt
+                  ).toLocaleString()}
                 </p>
               </div>
             </motion.div>
@@ -332,15 +379,7 @@ const styles = {
     height: 18,
     borderRadius: "50%",
     marginBottom: 5,
-    zIndex:2
-  },
-  line: {
-    position: "absolute",
-    top: 8,
-    left: "50%",
-    width: "100%",
-    height: 4,
-    zIndex: -1
+    zIndex: 2
   },
   details: {
     background: "#0f172a",
@@ -348,19 +387,18 @@ const styles = {
     borderRadius: 15
   },
   lineBase: {
-  position: "absolute",
-  top: 10,
-  left: "50%",
-  width: "100%",
-  height: 4,
-  background: "#334155",
-  borderRadius: 5,
-  overflow: "hidden"
-},
-lineFill: {
-  height: "100%",
-  background: "#22c55e",
-  borderRadius: 5
-}
-
+    position: "absolute",
+    top: 10,
+    left: "50%",
+    width: "100%",
+    height: 4,
+    background: "#334155",
+    borderRadius: 5,
+    overflow: "hidden"
+  },
+  lineFill: {
+    height: "100%",
+    background: "#22c55e",
+    borderRadius: 5
+  }
 };
