@@ -612,20 +612,25 @@ function logout() {
                 key={id}
               >
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  whileHover={{ scale: 1.05, y: -6 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
                 >
+
                   <Card
-                    sx={{
-                      borderRadius: 4,
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      bgcolor:
-                        "rgba(15,23,42,0.75)",
-                      boxShadow:
-                        "0 20px 40px rgba(0,0,0,0.6)"
-                    }}
-                  >
+                sx={{
+                  borderRadius: 4,
+                  height: 420, // 🔥 fixed height for all cards
+                  display: "flex",
+                  flexDirection: "column",
+                  bgcolor: "rgba(15,23,42,0.75)",
+                  boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+                  overflow: "hidden"
+                }}
+              >
+
                     <CardContent
                       onClick={() =>
                         setSelected(product)
@@ -636,12 +641,17 @@ function logout() {
                       }}
                     >
                       <Box
-                        sx={{
-                          overflow: "hidden",
-                          borderRadius: 2,
-                          mb: 2
-                        }}
-                      >
+                      sx={{
+                        overflow: "hidden",
+                        borderRadius: 2,
+                        mb: 2,
+                        height: 180, // 🔥 fixed image area
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                    >
+
                         <Box
                           component="img"
                           src={`data:image/jpeg;base64,${product.image}`}
@@ -922,7 +932,11 @@ function logout() {
             </Button>
           </Box>
 
-          <Grid container spacing={3}>
+         <Grid
+            container
+            spacing={{ xs: 2, sm: 3, md: 4 }}
+          >
+
             {/* IMAGE */}
             <Grid item xs={12} md={6}>
               <Box
