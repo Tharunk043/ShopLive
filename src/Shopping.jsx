@@ -703,10 +703,11 @@ function logout() {
                     </CardContent>
 
                     <CardActions
-                      sx={{
-                        justifyContent:
-                          "space-between"
-                      }}
+                                        sx={{
+                    justifyContent: "space-between",
+                    px: { xs: 1, sm: 2 }
+                  }}
+
                     >
                       <Box
                         display="flex"
