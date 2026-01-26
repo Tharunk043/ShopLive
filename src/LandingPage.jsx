@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Info, Mail, Phone, MapPin, Rocket } from "lucide-react";
+
 import {
   AppBar,
   Toolbar,
@@ -73,6 +75,202 @@ export default function LandingPage() {
           overflow: "hidden"
         }}
       >
+        {/* ===================== */}
+{/* 🌟 ABOUT SECTION */}
+{/* ===================== */}
+<Box
+  sx={{
+    py: { xs: 8, md: 12 },
+    background: "linear-gradient(180deg, #020617, #020617 60%, #020617)",
+    color: "white"
+  }}
+>
+  <Container maxWidth="lg">
+    <motion.div
+      initial={{ opacity: 0, y: 60 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+    >
+      <Typography
+        variant="h3"
+        textAlign="center"
+        mb={6}
+        sx={{ fontWeight: "bold" }}
+      >
+        🚀 About ShopLive
+      </Typography>
+    </motion.div>
+
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "1fr",
+          md: "repeat(3, 1fr)"
+        },
+        gap: 4
+      }}
+    >
+      {[
+        {
+          icon: <Rocket size={40} />,
+          title: "Fast & Real-Time",
+          text: "Track your orders in real-time with blazing-fast updates powered by modern cloud infrastructure."
+        },
+        {
+          icon: <Info size={40} />,
+          title: "Smart Shopping",
+          text: "AI-powered recommendations help you discover products you’ll love — every time you visit."
+        },
+        {
+          icon: <Mail size={40} />,
+          title: "Secure Platform",
+          text: "We use enterprise-grade security, JWT authentication, and encrypted data storage."
+        }
+      ].map((item, i) => (
+        <motion.div
+          key={i}
+          whileHover={{ scale: 1.05, y: -10 }}
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.2, duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <Box
+            sx={{
+              p: 4,
+              height: "100%",
+              borderRadius: 4,
+              background: "rgba(15,23,42,0.75)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+              textAlign: "center"
+            }}
+          >
+            <Box
+              sx={{
+                mb: 2,
+                color: "#22c55e",
+                display: "flex",
+                justifyContent: "center"
+              }}
+            >
+              {item.icon}
+            </Box>
+
+            <Typography variant="h6" fontWeight="bold" mb={1}>
+              {item.title}
+            </Typography>
+
+            <Typography sx={{ color: "#94a3b8" }}>
+              {item.text}
+            </Typography>
+          </Box>
+        </motion.div>
+      ))}
+    </Box>
+  </Container>
+</Box>
+{/* ===================== */}
+{/* 📞 CONTACT SECTION */}
+{/* ===================== */}
+<Box
+  sx={{
+    py: { xs: 8, md: 12 },
+    background: "linear-gradient(180deg, #020617, #020617)",
+    color: "white"
+  }}
+>
+  <Container maxWidth="md">
+    <motion.div
+      initial={{ opacity: 0, y: 60 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+    >
+      <Typography
+        variant="h3"
+        textAlign="center"
+        mb={6}
+        sx={{ fontWeight: "bold" }}
+      >
+        📬 Contact Us
+      </Typography>
+    </motion.div>
+
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "1fr",
+          sm: "repeat(3, 1fr)"
+        },
+        gap: 4
+      }}
+    >
+      {[
+        {
+          icon: <Mail size={28} />,
+          title: "Email",
+          value: "support@shoplive.com"
+        },
+        {
+          icon: <Phone size={28} />,
+          title: "Phone",
+          value: "+91 98765 43210"
+        },
+        {
+          icon: <MapPin size={28} />,
+          title: "Location",
+          value: "Bangalore, India"
+        }
+      ].map((item, i) => (
+        <motion.div
+          key={i}
+          whileHover={{ scale: 1.08, y: -8 }}
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.2, duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <Box
+            sx={{
+              p: 4,
+              borderRadius: 4,
+              textAlign: "center",
+              background: "rgba(15,23,42,0.75)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.6)"
+            }}
+          >
+            <Box
+              sx={{
+                mb: 2,
+                display: "flex",
+                justifyContent: "center",
+                color: "#38bdf8"
+              }}
+            >
+              {item.icon}
+            </Box>
+
+            <Typography fontWeight="bold">
+              {item.title}
+            </Typography>
+
+            <Typography sx={{ color: "#94a3b8" }}>
+              {item.value}
+            </Typography>
+          </Box>
+        </motion.div>
+      ))}
+    </Box>
+  </Container>
+</Box>
+
         {/* Background Slides */}
         <AnimatePresence mode="wait">
           <motion.div
