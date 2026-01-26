@@ -604,13 +604,8 @@ function logout() {
               wishlist.includes(id);
 
             return (
-              <Grid
-                item
-                xs={12}
-                sm={6}
-                md={4}
-                key={id}
-              >
+              <Grid key={id} sx={{ height: "100%" }}>
+
                 <motion.div
                   initial={{ opacity: 0, y: 40 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -793,18 +788,17 @@ function logout() {
       transition={{ duration: 0.5 }}
     >
       <Card
-        sx={{
-          p: 6,
-          minWidth: 360,
-          textAlign: "center",
-          borderRadius: 5,
-          bgcolor: "rgba(15,23,42,0.9)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.15)",
-          boxShadow: "0 40px 100px rgba(34,197,94,0.6)",
-          color: "white"
-        }}
-      >
+          sx={{
+            borderRadius: 4,
+            height: "100%", // 🔥 fill grid cell
+            display: "flex",
+            flexDirection: "column",
+            bgcolor: "rgba(15,23,42,0.75)",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+            overflow: "hidden"
+          }}
+        >
+
         <Typography
           variant="h3"
           fontWeight="bold"
@@ -933,10 +927,22 @@ function logout() {
             </Button>
           </Box>
 
-         <Grid
+                  <Grid
             container
             spacing={{ xs: 2, sm: 3, md: 4 }}
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(3, 1fr)",
+                lg: "repeat(4, 1fr)"
+              },
+              gridAutoRows: "1fr", // 🔥 forces equal row height
+              alignItems: "stretch"
+            }}
           >
+
 
             {/* IMAGE */}
             <Grid item xs={12} md={6}>
