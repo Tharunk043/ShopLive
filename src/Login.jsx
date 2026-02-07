@@ -2,6 +2,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import Particles from "react-tsparticles";
+import { loadSlim } from "tsparticles-slim";
+import Typewriter from "typewriter-effect";
 
 import {
   Container,
@@ -36,12 +39,9 @@ export default function Login({ onLogin }) {
     const roles = decoded.roles || [];
 
     onLogin();
-
-    if (roles.includes("ROLE_ADMIN")) {
-      navigate("/admin", { replace: true });
-    } else {
-      navigate("/shopping", { replace: true });
-    }
+    navigate(roles.includes("ROLE_ADMIN") ? "/admin" : "/shopping", {
+      replace: true
+    });
   }
 
   async function handlePasswordLogin(e) {
@@ -96,45 +96,75 @@ export default function Login({ onLogin }) {
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center"
-      }}
-    >
-      <Container maxWidth="sm">
+    <Box sx={{ minHeight: "100vh", position: "relative", bgcolor: "#0b0d10" }}>
+      {/* 🌌 Particle Background */}
+      <Particles
+        init={loadSlim}
+        options={{
+          background: { color: "#0b0d10" },
+          particles: {
+            number: { value: 40 },
+            size: { value: 1 },
+            opacity: { value: 0.3 },
+            move: { enable: true, speed: 0.2 },
+            links: {
+              enable: true,
+              opacity: 0.15,
+              distance: 150
+            }
+          }
+        }}
+        style={{ position: "absolute" }}
+      />
+
+      <Container
+        maxWidth="sm"
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          zIndex: 2
+        }}
+      >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
           style={{
-            background: "rgba(255,255,255,0.08)",
-            backdropFilter: "blur(20px)",
-            borderRadius: 28,
-            padding: 42,
-            boxShadow: "0 25px 60px rgba(0,0,0,0.6)"
+            background: "rgba(255,255,255,0.05)",
+            backdropFilter: "blur(16px)",
+            borderRadius: 20,
+            padding: 40,
+            width: "100%",
+            border: "1px solid rgba(255,255,255,0.08)"
           }}
         >
+          {/* ⌨️ Typing animation */}
           <Typography
             variant="h4"
-            align="center"
-            fontWeight={700}
             color="white"
+            fontWeight={600}
+            align="center"
             mb={1}
           >
-            ShopLive
+            <Typewriter
+              options={{
+                strings: ["Welcome back.", "ShopLive Login"],
+                autoStart: true,
+                loop: true,
+                delay: 60
+              }}
+            />
           </Typography>
 
           <Typography
             align="center"
-            color="rgba(255,255,255,0.7)"
-            mb={4}
+            color="rgba(255,255,255,0.6)"
+            mb={3}
           >
-            Sign in to continue shopping
+            Continue your experience
           </Typography>
 
           {error && (
@@ -148,14 +178,10 @@ export default function Login({ onLogin }) {
               onSuccess={handleGoogleLogin}
               onError={() => setError("Google Sign-In Failed")}
               theme="filled_black"
-              size="large"
-              width="300"
             />
           </Box>
 
-          <Divider sx={{ my: 3, color: "rgba(255,255,255,0.3)" }}>
-            OR
-          </Divider>
+          <Divider sx={{ my: 3, opacity: 0.2 }}>OR</Divider>
 
           <form onSubmit={handlePasswordLogin}>
             <TextField
@@ -165,10 +191,6 @@ export default function Login({ onLogin }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              sx={{
-                input: { color: "white" },
-                label: { color: "rgba(255,255,255,0.7)" }
-              }}
             />
 
             <TextField
@@ -179,16 +201,10 @@ export default function Login({ onLogin }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              sx={{
-                input: { color: "white" },
-                label: { color: "rgba(255,255,255,0.7)" }
-              }}
               InputProps={{
                 endAdornment: (
                   <IconButton
                     onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                    sx={{ color: "white" }}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -196,21 +212,20 @@ export default function Login({ onLogin }) {
               }}
             />
 
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            {/* 🎯 Button click animation */}
+            <motion.div whileTap={{ scale: 0.96 }}>
               <Button
                 fullWidth
-                disabled={loading}
                 type="submit"
-                variant="contained"
+                disabled={loading}
                 sx={{
                   mt: 4,
-                  py: 1.5,
-                  fontSize: 16,
+                  py: 1.4,
+                  borderRadius: 2,
                   fontWeight: 600,
-                  borderRadius: 999,
-                  background:
-                    "linear-gradient(135deg, #00c6ff, #0072ff)",
-                  boxShadow: "0 10px 30px rgba(0,114,255,0.5)"
+                  bgcolor: "white",
+                  color: "black",
+                  "&:hover": { bgcolor: "#e5e5e5" }
                 }}
               >
                 {loading ? "Signing in..." : "Login"}
