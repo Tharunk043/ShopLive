@@ -8,6 +8,7 @@ import Register from "./Register";
 import Dashboard from "./Dashboard";
 import Shopping from "./Shopping";
 import Admin from "./Admin";
+import NotFound from "./NotFound";
 export default function App() {
   const [isAuth, setIsAuth] = useState(
     !!localStorage.getItem("accessToken")
@@ -70,6 +71,7 @@ export default function App() {
               isAuth ? <Admin /> : <Navigate to="/login" replace />
             }
           />
+          <Route path="*" element={<NotFound />} />
 
         </Routes>
       </BrowserRouter>
