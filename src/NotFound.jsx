@@ -2,53 +2,36 @@ import { motion } from "framer-motion";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-black to-gray-900 text-white flex flex-col">
+    <div className="w-screen h-screen bg-black text-white relative overflow-hidden">
       
-      {/* Header */}
+      {/* Top overlay */}
       <motion.div
-        initial={{ opacity: 0, y: -30 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center py-6"
+        transition={{ duration: 0.5 }}
+        className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-center"
       >
-        <h1 className="text-3xl md:text-4xl font-bold">
+        <h1 className="text-xl md:text-2xl font-semibold">
           404 — Page Not Found
         </h1>
-        <p className="text-gray-400 mt-2">
-          This page doesn’t exist. Play while you’re here 🦖
+        <p className="text-gray-400 text-sm mt-1">
+          Page doesn’t exist. Press <b>Space</b> to play 🦖
         </p>
       </motion.div>
 
-      {/* Game Container */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+      {/* FULLSCREEN GAME */}
+      <motion.iframe
+        initial={{ opacity: 0, scale: 1.05 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.4 }}
-        className="flex-1 flex items-center justify-center px-4"
-      >
-        <div
-          className="
-            w-full 
-            max-w-5xl 
-            aspect-[3/1] 
-            bg-black 
-            rounded-xl 
-            overflow-hidden 
-            border border-gray-700
-            shadow-2xl
-          "
-        >
-          <iframe
-            src="https://wayou.github.io/t-rex-runner/"
-            title="Dino Game"
-            className="w-full h-full"
-          />
-        </div>
-      </motion.div>
+        transition={{ duration: 0.6 }}
+        src="https://wayou.github.io/t-rex-runner/"
+        title="Dino Game"
+        className="absolute inset-0 w-full h-full"
+      />
 
-      {/* Footer */}
-      <div className="text-center text-gray-500 text-sm py-4">
-        Press <b>Space</b> to jump · Refresh to restart
+      {/* Bottom overlay */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-gray-400 text-sm z-10">
+        Refresh to restart · ESC to leave
       </div>
     </div>
   );
