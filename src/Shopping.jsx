@@ -318,17 +318,13 @@ async function checkout() {
     const items = Object.entries(cart)
       .filter(([_, qty]) => qty > 0)
       .map(([id, qty]) => {
-        const product = products.find(
-          (p) => getId(p) === id
-        );
-        return (
-          product && {
-            productId: getId(product),
-            name: product.name,
-            price: product.price,
-            count: qty
-          }
-        );
+        const product = products.find(p => getId(p) === id);
+        return product && {
+          productId: getId(product),
+          name: product.name,
+          price: product.price,
+          count: qty
+        };
       })
       .filter(Boolean);
 
@@ -346,24 +342,39 @@ async function checkout() {
       body: JSON.stringify(items)
     });
 
-    // 🚦 Rate limit handling
+    // ✅ HANDLE RATE LIMIT
     if (res.status === 429) {
       const msg = await res.text();
-      alert(msg || "🚫 Too many orders. Please wait 1 minute and try again.");
+      alert(msg || "🚫 You can place only 3 orders per minute.");
       return;
     }
 
-    if (!res.ok) throw new Error();
+    // ✅ HANDLE AUTH EXPIRED
+    if (res.status === 401 || res.status === 403) {
+      alert("Session expired. Please login again.");
+      logout();
+      return;
+    }
 
+    // ✅ OTHER ERRORS
+    if (!res.ok) {
+      const msg = await res.text();
+      alert(msg || "❌ Order failed. Please try again.");
+      return;
+    }
+
+    // ✅ SUCCESS
     setCart({});
     setSuccessOpen(true);
-  } catch {
-    alert("❌ Session expired. Please login again.");
-    logout();
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Network error. Please try again.");
   } finally {
     setPlacing(false);
   }
 }
+
 
 function logout() {
   localStorage.clear();
