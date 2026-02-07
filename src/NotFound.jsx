@@ -2,38 +2,54 @@ import { motion } from "framer-motion";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
-      <motion.h1
-        initial={{ opacity: 0, y: -40 }}
+    <div className="min-h-screen w-full bg-gradient-to-b from-black to-gray-900 text-white flex flex-col">
+      
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-3xl font-bold mb-4"
+        className="text-center py-6"
       >
-        404 — Page Not Found
-      </motion.h1>
+        <h1 className="text-3xl md:text-4xl font-bold">
+          404 — Page Not Found
+        </h1>
+        <p className="text-gray-400 mt-2">
+          This page doesn’t exist. Play while you’re here 🦖
+        </p>
+      </motion.div>
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+      {/* Game Container */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.4 }}
-        className="text-gray-400 mb-6"
+        className="flex-1 flex items-center justify-center px-4"
       >
-        No internet? No page? Play the dino 🦖
-      </motion.p>
+        <div
+          className="
+            w-full 
+            max-w-5xl 
+            aspect-[3/1] 
+            bg-black 
+            rounded-xl 
+            overflow-hidden 
+            border border-gray-700
+            shadow-2xl
+          "
+        >
+          <iframe
+            src="https://wayou.github.io/t-rex-runner/"
+            title="Dino Game"
+            className="w-full h-full"
+          />
+        </div>
+      </motion.div>
 
-      {/* Dino Game */}
-      <motion.iframe
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        src="https://wayou.github.io/t-rex-runner/"
-        title="Dino Game"
-        className="w-[320px] h-[200px] border border-gray-700 rounded-lg"
-      />
-
-      <p className="mt-4 text-sm text-gray-500">
-        Press <b>Space</b> to jump
-      </p>
+      {/* Footer */}
+      <div className="text-center text-gray-500 text-sm py-4">
+        Press <b>Space</b> to jump · Refresh to restart
+      </div>
     </div>
   );
 }
