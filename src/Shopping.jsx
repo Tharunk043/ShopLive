@@ -972,33 +972,56 @@ function logout() {
     const count = cart[id] || 0;
     const productReviews = reviews[id] || [];
 
-    async function quickCheckout() {
-      try {
-        const res = await fetch(API_ORDERS, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify([
-            {
-              productId: id,
-              name: selected.name,
-              price: selected.price,
-              count: count || 1
-            }
-          ])
-        });
+async function quickCheckout() {
+  try {
+    const res = await fetch(API_ORDERS, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify([
+        {
+          productId: id,
+          name: selected.name,
+          price: selected.price,
+          count: count || 1
+        }
+      ])
+    });
 
-        if (!res.ok) throw new Error();
-        setCart({});
-        setSuccessOpen(true);
-        setSelected(null);
-      } catch {
-        alert("Checkout failed. Please login again.");
-        logout();
-      }
+    // 🚦 RATE LIMIT
+    if (res.status === 429) {
+      const msg = await res.text();
+      alert(msg || "🚫 You can place only 3 orders per minute.");
+      return;
     }
+
+    // 🔐 AUTH EXPIRED
+    if (res.status === 401 || res.status === 403) {
+      alert("Session expired. Please login again.");
+      logout();
+      return;
+    }
+
+    // ❌ OTHER ERRORS
+    if (!res.ok) {
+      const msg = await res.text();
+      alert(msg || "❌ Checkout failed. Please try again.");
+      return;
+    }
+
+    // ✅ SUCCESS
+    setCart({});
+    setSuccessOpen(true);
+    setSelected(null);
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Network error. Please try again.");
+  }
+}
+
 
     return (
       <motion.div
