@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion,AnimatePresence } from "framer-motion";
 import ModernCarousel from "./ModernCarousel";
 import slide1 from "./assets/slide1.jpg";
 import slide2 from "./assets/slide2.jpg";
@@ -50,6 +50,8 @@ const clamp = {
 export default function Shopping() {
   const [navOpen, setNavOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
 
   const [username] = useState(localStorage.getItem("username"));
   const [products, setProducts] = useState([]);
@@ -202,6 +204,88 @@ export default function Shopping() {
 
   return saved;
 }
+function DeliveryAnimation() {
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        width: 220,
+        height: 120,
+        mx: "auto",
+        mb: 3
+      }}
+    >
+      {/* ROAD */}
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 20,
+          width: "100%",
+          height: 4,
+          bgcolor: "#334155",
+          overflow: "hidden"
+        }}
+      >
+        <motion.div
+          animate={{ x: ["0%", "-100%"] }}
+          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+          style={{
+            width: "200%",
+            height: "100%",
+            background:
+              "repeating-linear-gradient(90deg, transparent 0 20px, #94a3b8 20px 40px)"
+          }}
+        />
+      </Box>
+
+      {/* TRUCK */}
+      <motion.div
+        animate={{ y: [0, -2, 0] }}
+        transition={{ repeat: Infinity, duration: 0.6 }}
+        style={{
+          position: "absolute",
+          bottom: 28,
+          left: "50%",
+          transform: "translateX(-50%)"
+        }}
+      >
+        <svg
+          width="160"
+          height="80"
+          viewBox="0 0 160 80"
+          fill="none"
+        >
+          {/* BOX */}
+          <motion.rect
+            x="70"
+            y="10"
+            width="36"
+            height="24"
+            rx="2"
+            fill="#facc15"
+            animate={{ y: [10, 8, 10] }}
+            transition={{ repeat: Infinity, duration: 0.6 }}
+          />
+
+          {/* TRUCK BODY */}
+          <rect x="20" y="26" width="90" height="28" rx="4" fill="#22c55e" />
+          <rect x="110" y="34" width="30" height="20" rx="3" fill="#16a34a" />
+
+          {/* CAB */}
+          <rect x="120" y="28" width="26" height="26" rx="4" fill="#15803d" />
+
+          {/* WHEELS */}
+          <circle cx="44" cy="60" r="8" fill="#020617" />
+          <circle cx="44" cy="60" r="3" fill="#94a3b8" />
+
+          <circle cx="96" cy="60" r="8" fill="#020617" />
+          <circle cx="96" cy="60" r="3" fill="#94a3b8" />
+        </svg>
+      </motion.div>
+    </Box>
+  );
+}
+
 async function loadReviews(productId) {
   try {
     const res = await fetch(
@@ -300,213 +384,243 @@ function logout() {
     >
       {/* 🌟 GLASS NAVBAR */}
       {/* 🌟 COLLAPSIBLE GLASS NAVBAR */}
-<motion.div
-  initial={{ y: -40, opacity: 0 }}
-  animate={{ y: 0, opacity: 1 }}
->
+<motion.div initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
   <Box
     sx={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      px: 3,
-      py: 2,
       position: "sticky",
       top: 0,
       zIndex: 1000,
-      backdropFilter: "blur(20px)",
-      background: "rgba(15,23,42,0.75)",
-      borderBottom: "1px solid rgba(255,255,255,0.1)",
-      boxShadow: "0 15px 40px rgba(0,0,0,0.6)"
+      backdropFilter: "blur(28px) saturate(160%)",
+      WebkitBackdropFilter: "blur(28px) saturate(160%)",
+      background:
+        "linear-gradient(180deg, rgba(15,23,42,0.75), rgba(15,23,42,0.55))",
+      borderBottom: "1px solid rgba(255,255,255,0.12)",
+      boxShadow:
+        "0 8px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)"
     }}
   >
-    {/* LEFT */}
-    <Box>
-      <Typography
-        variant="h6"
-        fontWeight="bold"
-        sx={{ textShadow: "0 0 12px rgba(34,197,94,0.6)" }}
-      >
-        🛍️ ShopLive
-      </Typography>
-      <Typography color="#cbd5f5" fontSize="0.85rem">
-        Welcome,{" "}
-        <span style={{ color: "#22c55e" }}>{username}</span>
-      </Typography>
-    </Box>
-
-    {/* DESKTOP MENU */}
+    {/* TOP BAR */}
     <Box
       sx={{
-        display: { xs: "none", md: "flex" },
-        gap: 2,
+        px: { xs: 2, md: 3 },
+        py: 1.6,
+        display: "flex",
+        justifyContent: "space-between",
         alignItems: "center"
       }}
     >
-      <TextField
-        size="small"
-        placeholder="Search..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{
-          bgcolor: "rgba(255,255,255,0.1)",
-          borderRadius: 2,
-          input: { color: "white" }
-        }}
-      />
+      {/* LEFT */}
+      <Box>
+        <Typography
+          fontWeight="bold"
+          fontSize="1.25rem"
+          sx={{
+            letterSpacing: 0.3,
+            textShadow: "0 0 14px rgba(34,197,94,0.45)"
+          }}
+        >
+          🛍️ <span style={{ color: "#22c55e" }}>ShopLive</span>
+        </Typography>
+        <Typography fontSize="0.78rem" color="#cbd5f5">
+          Welcome,&nbsp;
+          <span style={{ color: "#22c55e", fontWeight: 500 }}>
+            {username}
+          </span>
+        </Typography>
+      </Box>
 
-      <Select
-        size="small"
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
+      {/* DESKTOP ACTIONS */}
+      <Box
         sx={{
-          bgcolor: "rgba(255,255,255,0.1)",
-          color: "white",
-          minWidth: 120
+          display: { xs: "none", md: "flex" },
+          alignItems: "center",
+          gap: 1.2
         }}
       >
-        {categories.map((c) => (
-          <MenuItem key={c} value={c}>
-            {c}
-          </MenuItem>
-        ))}
-      </Select>
+        {/* SEARCH */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            borderRadius: 999,
+            px: searchOpen ? 1 : 0,
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06))",
+            border: "1px solid rgba(255,255,255,0.18)",
+            transition: "0.3s"
+          }}
+        >
+          <AnimatePresence>
+            {searchOpen && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 200, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <TextField
+                  size="small"
+                  autoFocus
+                  placeholder="Search products…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  variant="standard"
+                  InputProps={{ disableUnderline: true }}
+                  sx={{
+                    px: 1,
+                    input: {
+                      color: "white",
+                      fontSize: "0.9rem"
+                    }
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      <Button
-        variant="outlined"
-        startIcon={<List />}
-        onClick={() => navigate("/dashboard")}
-        sx={{ borderColor: "#22c55e", color: "#22c55e" }}
-      >
-        My Orders
-      </Button>
+          <IconButton sx={{ color: "white" }} onClick={() => setSearchOpen(p => !p)}>
+            <Search />
+          </IconButton>
+        </Box>
 
+        {/* ORDERS */}
+        <Button
+          startIcon={<List />}
+          onClick={() => navigate("/dashboard")}
+          sx={{
+            textTransform: "none",
+            fontWeight: 500,
+            color: "#e5e7eb",
+            "&:hover": {
+              color: "#22c55e",
+              background: "rgba(34,197,94,0.12)"
+            }
+          }}
+        >
+          Orders
+        </Button>
+
+        {/* CART */}
+        <IconButton
+          onClick={() => setSidebarOpen(true)}
+          sx={{
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08))",
+            border: "1px solid rgba(255,255,255,0.22)",
+            "&:hover": {
+              background: "rgba(255,255,255,0.25)"
+            }
+          }}
+        >
+          <Badge badgeContent={totalItems} color="error">
+            <ShoppingCart />
+          </Badge>
+        </IconButton>
+
+        {/* LOGOUT */}
+        <Button
+          onClick={logout}
+          sx={{
+            ml: 0.5,
+            px: 2.6,
+            borderRadius: 999,
+            textTransform: "none",
+            fontWeight: 600,
+            background:
+              "linear-gradient(135deg, rgba(239,68,68,0.95), rgba(220,38,38,0.95))",
+            boxShadow: "0 0 22px rgba(239,68,68,0.45)",
+            color: "white"
+          }}
+        >
+          Logout
+        </Button>
+      </Box>
+
+      {/* MOBILE TOGGLE */}
       <IconButton
-        onClick={() => setSidebarOpen(true)}
-        sx={{ bgcolor: "rgba(255,255,255,0.15)" }}
-      >
-        <Badge badgeContent={totalItems} color="error">
-          <ShoppingCart />
-        </Badge>
-      </IconButton>
-
-      <Button
-        variant="contained"
-        startIcon={<LogOut />}
-        onClick={logout}
+        onClick={() => setNavOpen(p => !p)}
         sx={{
-          background: "linear-gradient(135deg,#ef4444,#dc2626)"
+          display: { xs: "flex", md: "none" },
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08))",
+          border: "1px solid rgba(255,255,255,0.25)"
         }}
       >
-        Logout
-      </Button>
+        <Menu />
+      </IconButton>
     </Box>
 
-    {/* MOBILE MENU BUTTON */}
-    <IconButton
-      onClick={() => setNavOpen((p) => !p)}
-      sx={{
-        display: { xs: "flex", md: "none" },
-        bgcolor: "rgba(255,255,255,0.15)"
-      }}
-    >
-      <Menu />
-    </IconButton>
-  </Box>
-
-  {/* MOBILE COLLAPSIBLE PANEL */}
-  {/* MOBILE COLLAPSIBLE PANEL */}
-<motion.div
-  initial={false}
-  animate={navOpen ? "open" : "closed"}
-  variants={{
-    open: { height: "auto", opacity: 1 },
-    closed: { height: 0, opacity: 0 }
-  }}
-  transition={{ duration: 0.3 }}
-  style={{ overflow: "hidden" }}
->
-  <Box
-    sx={{
-      px: 3,
-      py: 2,
-      display: { xs: "flex", md: "none" },
-      flexDirection: "column",
-      gap: 2,
-      background: "rgba(15,23,42,0.95)",
-      borderBottom: "1px solid rgba(255,255,255,0.1)"
-    }}
-  >
-    {/* SEARCH ICON ROW */}
-    <Box
-      display="flex"
-      justifyContent="space-between"
-      alignItems="center"
-    >
-      <Typography fontWeight="bold">
-        Menu
-      </Typography>
-
-      <IconButton
-        onClick={() =>
-          setMobileSearchOpen((p) => !p)
-        }
-        sx={{ color: "white" }}
-      >
-        <Search />
-      </IconButton>
-    </Box>
-
-    {/* SEARCH INPUT */}
+    {/* MOBILE GLASS PANEL */}
     <motion.div
       initial={false}
-      animate={{
-        height: mobileSearchOpen ? "auto" : 0,
-        opacity: mobileSearchOpen ? 1 : 0
+      animate={navOpen ? "open" : "closed"}
+      variants={{
+        open: { height: "auto", opacity: 1 },
+        closed: { height: 0, opacity: 0 }
       }}
-      transition={{ duration: 0.25 }}
+      transition={{ duration: 0.3 }}
       style={{ overflow: "hidden" }}
     >
-      <TextField
-        fullWidth
-        size="small"
-        placeholder="Search products..."
-        value={search}
-        onChange={(e) =>
-          setSearch(e.target.value)
-        }
+      <Box
         sx={{
-          bgcolor: "rgba(255,255,255,0.1)",
-          borderRadius: 2,
-          input: { color: "white" }
+          px: 3,
+          py: 2.5,
+          display: { xs: "flex", md: "none" },
+          flexDirection: "column",
+          gap: 2,
+          backdropFilter: "blur(26px)",
+          background:
+            "linear-gradient(180deg, rgba(15,23,42,0.92), rgba(15,23,42,0.8))",
+          borderTop: "1px solid rgba(255,255,255,0.12)"
         }}
-      />
+      >
+        {/* MOBILE SEARCH */}
+        <Box display="flex" justifyContent="space-between">
+          <Typography fontWeight={600}>Menu</Typography>
+          <IconButton onClick={() => setMobileSearchOpen(p => !p)} sx={{ color: "white" }}>
+            <Search />
+          </IconButton>
+        </Box>
+
+        <motion.div
+          animate={{
+            height: mobileSearchOpen ? "auto" : 0,
+            opacity: mobileSearchOpen ? 1 : 0
+          }}
+          transition={{ duration: 0.25 }}
+          style={{ overflow: "hidden" }}
+        >
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search products…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08))",
+              borderRadius: 2,
+              input: { color: "white" }
+            }}
+          />
+        </motion.div>
+
+        <Button startIcon={<List />} onClick={() => navigate("/dashboard")}>
+          My Orders
+        </Button>
+
+        <Button startIcon={<ShoppingCart />} onClick={() => setSidebarOpen(true)}>
+          Cart ({totalItems})
+        </Button>
+
+        <Button startIcon={<LogOut />} onClick={logout} color="error">
+          Logout
+        </Button>
+      </Box>
     </motion.div>
-
-    <Button
-      startIcon={<List />}
-      onClick={() => navigate("/dashboard")}
-    >
-      My Orders
-    </Button>
-
-    <Button
-      startIcon={<ShoppingCart />}
-      onClick={() => setSidebarOpen(true)}
-    >
-      Cart ({totalItems})
-    </Button>
-
-    <Button
-      startIcon={<LogOut />}
-      onClick={logout}
-      color="error"
-    >
-      Logout
-    </Button>
   </Box>
 </motion.div>
-</motion.div>
+
 
 
       {/* 🛒 CART DRAWER */}
@@ -577,7 +691,7 @@ function logout() {
 
       {/* 🧱 PRODUCT GRID */}
       <Box p={4}>
-        <ModernCarousel slides={slides} />
+        {!search.trim() && <ModernCarousel slides={slides} />}
         <Grid container spacing={3}>
           {(loading
             ? Array.from({ length: 6 })
@@ -604,28 +718,28 @@ function logout() {
               wishlist.includes(id);
 
             return (
-              <Grid key={id} sx={{ height: "100%" }}>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  whileHover={{ scale: 1.05, y: -6 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
-
-                  <Card
-                sx={{
-                  borderRadius: 4,
-                  height: 420, // 🔥 fixed height for all cards
-                  display: "flex",
-                  flexDirection: "column",
-                  bgcolor: "rgba(15,23,42,0.75)",
-                  boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
-                  overflow: "hidden"
-                }}
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                key={id}
               >
-
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <Card
+                    sx={{
+                      borderRadius: 4,
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      bgcolor:
+                        "rgba(15,23,42,0.75)",
+                      boxShadow:
+                        "0 20px 40px rgba(0,0,0,0.6)"
+                    }}
+                  >
                     <CardContent
                       onClick={() =>
                         setSelected(product)
@@ -636,17 +750,12 @@ function logout() {
                       }}
                     >
                       <Box
-                      sx={{
-                        overflow: "hidden",
-                        borderRadius: 2,
-                        mb: 2,
-                        height: 180, // 🔥 fixed image area
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                    >
-
+                        sx={{
+                          overflow: "hidden",
+                          borderRadius: 2,
+                          mb: 2
+                        }}
+                      >
                         <Box
                           component="img"
                           src={`data:image/jpeg;base64,${product.image}`}
@@ -675,34 +784,26 @@ function logout() {
                         {product.name}
                       </Typography>
 
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          ...clamp,
-                          WebkitLineClamp: 2,
-                          color: "#94a3b8"
-                        }}
-                      >
-                        {product.description}
-                      </Typography>
+      <Typography
+        variant="body2"
+        sx={{ color: "#94a3b8", my: 1 }}
+      >
+        {product.description}
+      </Typography>
 
-                      <Typography
-                        sx={{
-                          mt: 1,
-                          color: "#22c55e",
-                          fontWeight: "bold"
-                        }}
-                      >
-                        ₹{product.price}
-                      </Typography>
-                    </CardContent>
+      <Typography
+        fontWeight="bold"
+        sx={{ color: "#22c55e" }}
+      >
+        ₹{product.price}
+      </Typography>
+    </Box>
 
                     <CardActions
-                                        sx={{
-                    justifyContent: "space-between",
-                    px: { xs: 1, sm: 2 }
-                  }}
-
+                      sx={{
+                        justifyContent:
+                          "space-between"
+                      }}
                     >
                       <Box
                         display="flex"
@@ -729,27 +830,16 @@ function logout() {
                         </Button>
                       </Box>
 
-                      <IconButton
-                        onClick={() =>
-                          toggleWishlist(id)
-                        }
-                        sx={{
-                          color: wish
-                            ? "hotpink"
-                            : "white"
-                        }}
-                      >
-                        <Heart
-                          fill={
-                            wish
-                              ? "hotpink"
-                              : "none"
-                          }
-                        />
-                      </IconButton>
-                    </CardActions>
-                  </Card>
-                </motion.div>
+      <IconButton
+        onClick={() => toggleWishlist(id)}
+        sx={{ color: wish ? "hotpink" : "white" }}
+      >
+        <Heart fill={wish ? "hotpink" : "none"} />
+      </IconButton>
+    </Box>
+  </Box>
+</motion.div>
+
               </Grid>
             );
           })}
@@ -765,14 +855,26 @@ function logout() {
             </Typography>
           )}
           {/* 🎉 SUCCESS POPUP */}
-<Dialog
-  open={successOpen}
-  fullScreen
-  PaperProps={{
-    sx: { bgcolor: "rgba(2,6,23,0.95)" }
-  }}
->
-  <Confetti recycle={false} numberOfPieces={400} gravity={0.25} />
+<AnimatePresence>
+  {successOpen && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 2000,
+        background:
+          "radial-gradient(circle at top, rgba(34,197,94,0.15), rgba(2,6,23,0.96))",
+        backdropFilter: "blur(18px)"
+      }}
+    >
+      <Confetti
+        recycle={false}
+        numberOfPieces={250}
+        gravity={0.18}
+      />
 
   <Box
     sx={{
@@ -788,17 +890,18 @@ function logout() {
       transition={{ duration: 0.5 }}
     >
       <Card
-          sx={{
-            borderRadius: 4,
-            height: "100%", // 🔥 fill grid cell
-            display: "flex",
-            flexDirection: "column",
-            bgcolor: "rgba(15,23,42,0.75)",
-            boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
-            overflow: "hidden"
-          }}
-        >
-
+        sx={{
+          p: 6,
+          minWidth: 360,
+          textAlign: "center",
+          borderRadius: 5,
+          bgcolor: "rgba(15,23,42,0.9)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          boxShadow: "0 40px 100px rgba(34,197,94,0.6)",
+          color: "white"
+        }}
+      >
         <Typography
           variant="h3"
           fontWeight="bold"
@@ -810,63 +913,63 @@ function logout() {
           🎉 Order Placed!
         </Typography>
 
-        <Typography sx={{ color: "#94a3b8", mb: 4 }}>
-          Your items are on their way.  
-          Thanks for shopping with <b>ShopLive</b>!
-        </Typography>
+<Typography variant="h4" fontWeight="bold" mb={1}>
+  Order on the way!
+</Typography>
 
-        <Button
-          fullWidth
-          size="large"
-          variant="contained"
-          sx={{
-            py: 1.5,
-            fontWeight: "bold",
-            borderRadius: 3,
-            background:
-              "linear-gradient(135deg, #22c55e, #4ade80)",
-            boxShadow:
-              "0 0 25px rgba(34,197,94,0.8)",
-            "&:hover": {
-              background:
-                "linear-gradient(135deg, #4ade80, #22c55e)"
-            }
-          }}
-          onClick={() => {
-            setSuccessOpen(false);
-          }}
-        >
-          🛍 Continue Shopping
-        </Button>
-      </Card>
+<Typography sx={{ color: "#94a3b8", mb: 3 }}>
+  Your package is rolling towards you 🚚
+</Typography>
+
+
+
+            {/* CTA */}
+            <Button
+              fullWidth
+              size="large"
+              onClick={() => setSuccessOpen(false)}
+              sx={{
+                py: 1.4,
+                fontWeight: "bold",
+                borderRadius: 999,
+                bgcolor: "#22c55e",
+                color: "#020617",
+                "&:hover": {
+                  bgcolor: "#4ade80"
+                }
+              }}
+            >
+              Continue Shopping
+            </Button>
+          </Box>
+        </motion.div>
+      </Box>
     </motion.div>
-  </Box>
-</Dialog>
+  )}
+</AnimatePresence>
+
 
       </Box>
 
       {/* 📦 PRODUCT MODAL */}
       {/* 🪟 MODERN PRODUCT SHEET */}
 {/* 🪟 PRODUCT DIALOG WITH CHECKOUT */}
-<Dialog
+<Drawer
+  anchor="bottom"
   open={!!selected}
   onClose={() => setSelected(null)}
-  maxWidth="md"
-  fullWidth
   PaperProps={{
     sx: {
-      bgcolor: "transparent",
-      boxShadow: "none"
+      height: { xs: "92vh", md: "85vh" },
+      bgcolor: "#020617",
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24
     }
   }}
 >
   {selected && (() => {
-  const id = getId(selected);
-
-  // 🔥 LOAD REVIEWS ON OPEN
-  if (!reviews[id]) {
-    loadReviews(id);
-  }
+    const id = getId(selected);
+    if (!reviews[id]) loadReviews(id);
 
     const count = cart[id] || 0;
     const productReviews = reviews[id] || [];
@@ -890,7 +993,6 @@ function logout() {
         });
 
         if (!res.ok) throw new Error();
-
         setCart({});
         setSuccessOpen(true);
         setSelected(null);
@@ -905,45 +1007,26 @@ function logout() {
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
+        style={{ height: "100%" }}
       >
+        {/* HEADER */}
         <Box
-          sx={{
-            backdropFilter: "blur(30px)",
-            bgcolor: "rgba(15,23,42,0.92)",
-            borderRadius: 4,
-            p: 3,
-            border: "1px solid rgba(255,255,255,0.1)",
-            boxShadow: "0 30px 80px rgba(0,0,0,0.8)",
-            color: "white"
-          }}
+          px={3}
+          py={2}
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          borderBottom="1px solid rgba(255,255,255,0.08)"
         >
-          {/* HEADER */}
-          <Box display="flex" justifyContent="space-between" mb={2}>
-            <Typography variant="h5" fontWeight="bold">
-              {selected.name}
-            </Typography>
-            <Button onClick={() => setSelected(null)} sx={{ color: "#94a3b8" }}>
-              ✕
-            </Button>
-          </Box>
+          <Typography fontWeight="bold">
+            {selected.name}
+          </Typography>
+          <IconButton onClick={() => setSelected(null)}>
+            ✕
+          </IconButton>
+        </Box>
 
-                  <Grid
-            container
-            spacing={{ xs: 2, sm: 3, md: 4 }}
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(3, 1fr)",
-                lg: "repeat(4, 1fr)"
-              },
-              gridAutoRows: "1fr", // 🔥 forces equal row height
-              alignItems: "stretch"
-            }}
-          >
-
-
+          <Grid container spacing={3}>
             {/* IMAGE */}
             <Grid item xs={12} md={6}>
               <Box
@@ -952,10 +1035,9 @@ function logout() {
                 alt={selected.name}
                 sx={{
                   width: "100%",
-                  height: 320,
+                  height: 340,
                   objectFit: "cover",
-                  borderRadius: 3,
-                  boxShadow: "0 20px 40px rgba(34,197,94,0.4)"
+                  borderRadius: 3
                 }}
               />
             </Grid>
@@ -963,7 +1045,7 @@ function logout() {
             {/* DETAILS */}
             <Grid item xs={12} md={6}>
               <Typography sx={{ color: "#cbd5f5", mb: 2 }}>
-                {selected.description || "No description available."}
+                {selected.description}
               </Typography>
 
               <Typography
@@ -978,119 +1060,72 @@ function logout() {
               </Typography>
 
               {/* QUANTITY */}
-              <Box display="flex" alignItems="center" gap={2} mb={3}>
+              <Box display="flex" gap={2} mb={3}>
                 <Button
                   variant="outlined"
                   disabled={count === 0}
                   onClick={() => removeFromCart(id)}
-                  sx={{
-                    minWidth: 48,
-                    minHeight: 48,
-                    borderRadius: "50%",
-                    color: "white",
-                    borderColor: "#22c55e"
-                  }}
                 >
-                  -
+                  −
                 </Button>
 
-                <Typography
-                  sx={{
-                    minWidth: 40,
-                    textAlign: "center",
-                    fontSize: "1.4rem",
-                    fontWeight: "bold"
-                  }}
-                >
+                <Typography fontWeight="bold">
                   {count}
                 </Typography>
 
                 <Button
                   variant="contained"
                   onClick={() => addToCart(id)}
-                  sx={{
-                    minWidth: 48,
-                    minHeight: 48,
-                    borderRadius: "50%",
-                    bgcolor: "#22c55e",
-                    "&:hover": { bgcolor: "#4ade80" }
-                  }}
                 >
                   +
                 </Button>
               </Box>
 
-              {/* ACTION BUTTONS */}
-              <Box display="flex" gap={2} mb={3}>
-                
-
-                <Button
-                  fullWidth
-                  color="warning"
-                  variant="contained"
-                  disabled={count === 0}
-                  onClick={quickCheckout}
-                  sx={{
-                    py: 1.5,
-                    fontWeight: "bold",
-                    borderRadius: 3
-                  }}
-                >
-                  ⚡ Checkout Now
-                </Button>
-              </Box>
+              {/* CHECKOUT */}
+              <Button
+                fullWidth
+                disabled={count === 0}
+                onClick={quickCheckout}
+                sx={{
+                  py: 1.4,
+                  borderRadius: 3,
+                  fontWeight: "bold",
+                  bgcolor: "#22c55e",
+                  color: "#020617",
+                  mb: 4
+                }}
+              >
+                ⚡ Checkout Now
+              </Button>
 
               {/* REVIEWS */}
-              <Typography variant="subtitle1" mb={1}>
-                <Star size={16} /> Reviews
+              <Typography fontWeight="bold" mb={1}>
+                Reviews
               </Typography>
 
               {productReviews.map((r, i) => (
-  <Box
-    key={i}
-    p={1.5}
-    mb={1}
-    sx={{
-      bgcolor: "rgba(255,255,255,0.05)",
-      borderRadius: 2,
-      border: "1px solid rgba(255,255,255,0.08)"
-    }}
-  >
-    {/* USER + STARS ROW */}
-    <Box
-      display="flex"
-      justifyContent="space-between"
-      alignItems="center"
-      mb={0.5}
-    >
-      <Typography
-        variant="subtitle2"
-        sx={{ color: "#22c55e", fontWeight: "bold" }}
-      >
-        {r.username}
-      </Typography>
+                <Box
+                  key={i}
+                  p={1.5}
+                  mb={1}
+                  sx={{
+                    bgcolor: "rgba(255,255,255,0.05)",
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography
+                    fontSize="0.85rem"
+                    color="#22c55e"
+                    fontWeight="bold"
+                  >
+                    {r.username}
+                  </Typography>
 
-      <Box display="flex" gap={0.3}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <Star
-            key={n}
-            size={14}
-            fill={n <= r.stars ? "#facc15" : "none"}
-            color="#facc15"
-          />
-        ))}
-      </Box>
-    </Box>
-
-    {/* REVIEW TEXT */}
-    <Typography
-      variant="body2"
-      sx={{ color: "#e5e7eb", lineHeight: 1.5 }}
-    >
-      {r.text}
-    </Typography>
-  </Box>
-))}
+                  <Typography fontSize="0.85rem">
+                    {r.text}
+                  </Typography>
+                </Box>
+              ))}
 
               <StarReviewForm
                 onSubmit={(text, stars) =>
@@ -1103,7 +1138,8 @@ function logout() {
       </motion.div>
     );
   })()}
-</Dialog>
+</Drawer>
+
 
    </Box>
   );
