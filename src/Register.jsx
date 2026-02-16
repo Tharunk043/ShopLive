@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "framer-motion"; // eslint-disable-line
 import Particles from "react-tsparticles";
 import { loadSlim } from "tsparticles-slim";
 import Typewriter from "typewriter-effect";
@@ -13,8 +13,10 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Divider
+  Divider,
+  IconButton
 } from "@mui/material";
+import { ArrowLeft, UserPlus } from "lucide-react";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -65,21 +67,47 @@ export default function Register() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", position: "relative", bgcolor: "#0b0d10" }}>
-      {/* 🌌 Particles */}
+    <Box sx={{ minHeight: "100vh", position: "relative", bgcolor: "#020617", overflow: "hidden" }}>
+      {/* 🌌 Background Orbs */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "-15%",
+          left: "-10%",
+          width: "500px",
+          height: "500px",
+          background: "var(--primary)",
+          filter: "blur(180px)",
+          opacity: 0.1,
+          zIndex: 0
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: "-10%",
+          right: "-5%",
+          width: "400px",
+          height: "400px",
+          background: "var(--secondary)",
+          filter: "blur(150px)",
+          opacity: 0.1,
+          zIndex: 0
+        }}
+      />
+
       <Particles
         init={loadSlim}
         options={{
-          background: { color: "#0b0d10" },
           particles: {
-            number: { value: 40 },
-            size: { value: 1 },
-            opacity: { value: 0.3 },
-            move: { enable: true, speed: 0.2 },
-            links: { enable: true, opacity: 0.15, distance: 150 }
+            number: { value: 60 },
+            size: { value: 1.5 },
+            opacity: { value: 0.2 },
+            move: { enable: true, speed: 0.4 },
+            links: { enable: true, opacity: 0.1, distance: 150 }
           }
         }}
-        style={{ position: "absolute" }}
+        style={{ position: "absolute", zIndex: 1 }}
       />
 
       <Container
@@ -87,33 +115,44 @@ export default function Register() {
         sx={{
           minHeight: "100vh",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
           zIndex: 2
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 25 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            backdropFilter: "blur(16px)",
-            borderRadius: 20,
-            padding: 40,
-            width: "100%",
-            border: "1px solid rgba(255,255,255,0.08)"
+        <Button
+          startIcon={<ArrowLeft size={18} />}
+          onClick={() => navigate("/")}
+          sx={{
+            alignSelf: "flex-start",
+            mb: 4,
+            color: "var(--text-secondary)",
+            "&:hover": { color: "var(--primary)" }
           }}
         >
-          {/* ⌨️ Typing heading */}
-          <Typography
-            variant="h4"
-            align="center"
-            color="white"
-            fontWeight={600}
-            mb={1}
-          >
+          Back to home
+        </Button>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="glass-panel"
+          style={{
+            padding: "40px",
+            width: "100%",
+            textAlign: "center"
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <Box sx={{ p: 1.5, borderRadius: "16px", bgcolor: "rgba(56, 189, 248, 0.1)", color: "var(--secondary)" }}>
+              <UserPlus size={32} />
+            </Box>
+          </Box>
+
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, letterSpacing: "-1px" }}>
             <Typewriter
               options={{
                 strings: ["Create account.", "Join ShopLive"],
@@ -124,92 +163,100 @@ export default function Register() {
             />
           </Typography>
 
-          <Typography
-            align="center"
-            color="rgba(255,255,255,0.6)"
-            mb={3}
-          >
-            It only takes a minute
+          <Typography sx={{ color: "var(--text-secondary)", mb: 4 }}>
+            Start your premium shopping journey today
           </Typography>
 
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3, borderRadius: "12px", bgcolor: "rgba(244, 63, 94, 0.1)", color: "#fb7185", border: "1px solid rgba(244, 63, 94, 0.2)" }}>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity="success" sx={{ mb: 3, borderRadius: "12px", bgcolor: "rgba(34, 197, 94, 0.1)", color: "#4ade80", border: "1px solid rgba(34, 197, 94, 0.2)" }}>
+              {success}
+            </Alert>
+          )}
 
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Name"
+              placeholder="Full Name"
               name="name"
-              margin="normal"
               value={form.name}
               onChange={handleChange}
               required
+              sx={inputStyles}
             />
 
             <TextField
               fullWidth
-              label="Email"
+              placeholder="Email Address"
               name="email"
               type="email"
-              margin="normal"
               value={form.email}
               onChange={handleChange}
               required
+              sx={{ ...inputStyles, mt: 2 }}
             />
 
             <TextField
               fullWidth
-              label="Password"
+              placeholder="Password"
               name="password"
               type="password"
-              margin="normal"
               value={form.password}
               onChange={handleChange}
               required
+              sx={{ ...inputStyles, mt: 2 }}
             />
 
-            {/* 🎯 Click animation */}
-            <motion.div whileTap={{ scale: 0.96 }}>
-              <Button
-                fullWidth
-                type="submit"
-                disabled={loading}
-                sx={{
-                  mt: 4,
-                  py: 1.4,
-                  borderRadius: 2,
-                  fontWeight: 600,
-                  bgcolor: "white",
-                  color: "black",
-                  "&:hover": { bgcolor: "#e5e5e5" }
-                }}
-              >
-                {loading ? <CircularProgress size={24} /> : "Create Account"}
-              </Button>
-            </motion.div>
+            <Button
+              fullWidth
+              type="submit"
+              disabled={loading}
+              variant="contained"
+              sx={{
+                mt: 4,
+                py: 1.8,
+                fontSize: "1rem",
+                bgcolor: "var(--secondary)",
+                "&:hover": { bgcolor: "#0ea5e9" },
+                boxShadow: "0 0 20px rgba(56, 189, 248, 0.3)"
+              }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : "Create Account"}
+            </Button>
           </Box>
 
-          <Divider sx={{ my: 3, opacity: 0.2 }} />
+          <Divider sx={{ my: 4, borderColor: "rgba(255,255,255,0.08)" }} />
 
-          <Button
-            fullWidth
-            variant="text"
-            sx={{ color: "rgba(255,255,255,0.7)" }}
-            onClick={() => navigate("/login")}
-          >
-            Already have an account? Login
-          </Button>
-
-          <Button
-            fullWidth
-            variant="text"
-            sx={{ color: "rgba(255,255,255,0.5)" }}
-            onClick={() => navigate("/")}
-          >
-            Back to Home
-          </Button>
+          <Typography variant="body2" sx={{ color: "var(--text-secondary)" }}>
+            Already have an account?{" "}
+            <Button
+              onClick={() => navigate("/login")}
+              sx={{ p: 0, textTransform: "none", fontWeight: 700, color: "var(--secondary)" }}
+            >
+              Log in instead
+            </Button>
+          </Typography>
         </motion.div>
       </Container>
     </Box>
   );
 }
+
+const inputStyles = {
+  "& .MuiOutlinedInput-root": {
+    color: "white",
+    bgcolor: "rgba(255,255,255,0.03)",
+    borderRadius: "12px",
+    "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+    "&.Mui-focused fieldset": { borderColor: "var(--secondary)" },
+  },
+  "& .MuiInputBase-input::placeholder": {
+    color: "var(--text-secondary)",
+    opacity: 1,
+  }
+};

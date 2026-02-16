@@ -1,6 +1,6 @@
 import { CssBaseline } from "@mui/material";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import LandingPage from "./LandingPage";
 import Login from "./Login";
@@ -21,14 +21,14 @@ export default function App() {
     return () => window.removeEventListener("storage", syncAuth);
   }, []);
 
-  function handleLogin() {
+  const handleLogin = useCallback(() => {
     setIsAuth(true);
-  }
+  }, []);
 
-  function handleLogout() {
+  const handleLogout = useCallback(() => {
     localStorage.clear();
     setIsAuth(false);
-  }
+  }, []);
 
   return (
     <>
@@ -57,14 +57,14 @@ export default function App() {
           <Route
             path="/shopping"
             element={
-            isAuth ? (
-            <Shopping onLogout={handleLogout} />
-            ) : (
-            <Navigate to="/login" replace />
-            )
+              isAuth ? (
+                <Shopping onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
-            />
-            <Route
+          />
+          <Route
             path="/admin"
             element={
               isAuth ? <Admin /> : <Navigate to="/login" replace />

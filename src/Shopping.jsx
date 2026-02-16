@@ -1,20 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
-import { motion,AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion"; // eslint-disable-line
 import ModernCarousel from "./ModernCarousel";
-import slide1 from "./assets/slide1.jpg";
-import slide2 from "./assets/slide2.jpg";
-import slide3 from "./assets//slide3.webp";
-import { Menu } from "lucide-react";
-import { Search } from "lucide-react";
-
 import {
+  Menu,
+  Search,
   LogOut,
   ShoppingCart,
   Star,
   List,
-  Heart
+  Heart,
+  X,
+  ShoppingBag,
+  User,
+  Package,
+  ChevronDown,
+  MessageSquare,
+  Send
 } from "lucide-react";
 import Confetti from "react-confetti";
+import Typewriter from "typewriter-effect";
 import {
   Card,
   CardContent,
@@ -32,72 +36,93 @@ import {
   Badge,
   Select,
   MenuItem,
-  Skeleton
+  Skeleton,
+  Container,
+  Rating,
+  Avatar,
+  Divider
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 const API_PRODUCTS = "https://demo-springboot-zdym.onrender.com/products";
 const API_ORDERS = "https://demo-springboot-zdym.onrender.com/orders";
+const API_REVIEWS = "https://demo-springboot-zdym.onrender.com/reviews";
 
-const getId = (p) => p.id || p._id;
-
-const clamp = {
-  display: "-webkit-box",
-  WebkitBoxOrient: "vertical",
-  overflow: "hidden"
-};
+const getId = (p) => p?.id || p?._id || "unknown";
+const truncate = (str, len = 25) => str?.length > len ? str.substring(0, len) + "..." : str;
 
 export default function Shopping() {
-  const [navOpen, setNavOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-
-
-  const [username] = useState(localStorage.getItem("username"));
+  // const [navOpen, setNavOpen] = useState(false);
+  // const [username] = useState(localStorage.getItem("username"));
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState({});
   const [selected, setSelected] = useState(null);
-  const [reviews, setReviews] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const slides = [
-  {
-    image:
-      slide1,
-    title: "Next-Gen Shopping",
-    subtitle: "Smooth. Fast. Beautiful."
-  },
-  {
-    image:
-      slide2,
-    title: "Premium Deals",
-    subtitle: "Limited-time offers just for you"
-  },
-  {
-    image:
-      slide3,
-    title: "Wishlist Magic",
-    subtitle: "Save what you love, buy when ready"
-  }
-];
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Dynamic Slides for Carousel
+  const carouselSlides = useMemo(() => {
+    if (products.length === 0) return [];
+    // Pick 3 random products or first 3 if list is small
+    const shuffled = [...products].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3).map(p => {
+      if (!p) return null;
+      return {
+        productId: getId(p),
+        image: p.image ? `data:image/jpeg;base64,${p.image}` : "https://via.placeholder.com/800",
+        title: p.name || "Exclusive Item",
+        subtitle: truncate(p.description, 80) || "Discover our latest premium selection.",
+        offer: true
+      };
+    }).filter(Boolean);
+  }, [products]);
+
+  // Reviews System
+  const [reviews, setReviews] = useState({});
+  const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState(5);
 
 
-  const [wishlist, setWishlist] = useState(
-    JSON.parse(localStorage.getItem("wishlist") || "[]")
-  );
+  const [wishlist, setWishlist] = useState(() => {
+    try {
+      const saved = localStorage.getItem("wishlist");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("ALL");
 
   const navigate = useNavigate();
   const token = localStorage.getItem("accessToken");
 
-  // =============================
-  // LOAD PRODUCTS
-  // =============================
+  const loadReviews = useCallback(async (productId) => {
+    try {
+      const res = await fetch(`${API_REVIEWS}/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(prev => ({ ...prev, [productId]: data }));
+      }
+    } catch {
+      // console.error("Failed to fetch reviews");
+    }
+  }, [token]);
+
+  const logout = useCallback(() => {
+    localStorage.clear();
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      logout();
+      return;
+    };
 
     fetch(API_PRODUCTS, {
       headers: { Authorization: `Bearer ${token}` }
@@ -110,1079 +135,674 @@ export default function Shopping() {
         return res.json();
       })
       .then((data) => {
-        if (data) {
+        if (Array.isArray(data)) {
           setProducts(data);
           setLoading(false);
+        } else {
+          setLoading(false);
+          console.error("API did not return an array:", data);
         }
       })
       .catch(() => setLoading(false));
-  }, [token]);
+  }, [token, logout]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // =============================
-  // FILTERING
-  // =============================
-  const categories = useMemo(() => {
-    const set = new Set(["ALL"]);
-    products.forEach((p) => set.add(p.category || "GENERAL"));
-    return [...set];
-  }, [products]);
-  
+  useEffect(() => {
+    if (selected) {
+      loadReviews(getId(selected));
+    }
+  }, [selected, loadReviews]);
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      const text =
-        `${p.name} ${p.description}`.toLowerCase();
-      const matchText = text.includes(search.toLowerCase());
-      const matchCat =
-        category === "ALL" ||
-        (p.category || "GENERAL") === category;
-
-      return matchText && matchCat;
+      const name = p?.name || "";
+      const desc = p?.description || "";
+      const text = `${name} ${desc}`.toLowerCase();
+      return text.includes((search || "").toLowerCase());
     });
-  }, [products, search, category]);
+  }, [products, search]);
 
-  // =============================
-  // CART
-  // =============================
-  const addToCart = (id) => {
-    setCart((prev) => ({
-      ...prev,
-      [id]: (prev[id] || 0) + 1
-    }));
-  };
+  const addToCart = useCallback((id) => setCart(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 })), []);
+  const removeFromCart = useCallback((id) => setCart(prev => ({ ...prev, [id]: Math.max((prev[id] || 1) - 1, 0) })), []);
+  const totalItems = useMemo(() => Object.values(cart).reduce((a, b) => a + b, 0), [cart]);
 
-  const removeFromCart = (id) => {
-    setCart((prev) => ({
-      ...prev,
-      [id]: Math.max((prev[id] || 1) - 1, 0)
-    }));
-  };
-
-  const totalItems = Object.values(cart).reduce(
-    (a, b) => a + b,
-    0
-  );
-
-  // =============================
-  // WISHLIST
-  // =============================
-  function toggleWishlist(id) {
-    setWishlist((prev) => {
-      const updated = prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id];
-      localStorage.setItem(
-        "wishlist",
-        JSON.stringify(updated)
-      );
+  const toggleWishlist = useCallback((id) => {
+    setWishlist(prev => {
+      const updated = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      localStorage.setItem("wishlist", JSON.stringify(updated));
       return updated;
     });
-  }
-  async function submitReview(productId, text, stars) {
-  const token = localStorage.getItem("accessToken");
+  }, []);
 
-  const res = await fetch(
-    `https://demo-springboot-zdym.onrender.com/reviews/${productId}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ text, stars })
-    }
-  );
 
-  if (!res.ok) throw new Error("Review failed");
-
-  const saved = await res.json();
-
-  // 🔥 INSTANTLY UPDATE UI
-  setReviews((prev) => ({
-    ...prev,
-    [productId]: [saved, ...(prev[productId] || [])]
-  }));
-
-  return saved;
-}
-function DeliveryAnimation() {
-  return (
-    <Box
-      sx={{
-        position: "relative",
-        width: 220,
-        height: 120,
-        mx: "auto",
-        mb: 3
-      }}
-    >
-      {/* ROAD */}
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 20,
-          width: "100%",
-          height: 4,
-          bgcolor: "#334155",
-          overflow: "hidden"
-        }}
-      >
-        <motion.div
-          animate={{ x: ["0%", "-100%"] }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          style={{
-            width: "200%",
-            height: "100%",
-            background:
-              "repeating-linear-gradient(90deg, transparent 0 20px, #94a3b8 20px 40px)"
-          }}
-        />
-      </Box>
-
-      {/* TRUCK */}
-      <motion.div
-        animate={{ y: [0, -2, 0] }}
-        transition={{ repeat: Infinity, duration: 0.6 }}
-        style={{
-          position: "absolute",
-          bottom: 28,
-          left: "50%",
-          transform: "translateX(-50%)"
-        }}
-      >
-        <svg
-          width="160"
-          height="80"
-          viewBox="0 0 160 80"
-          fill="none"
-        >
-          {/* BOX */}
-          <motion.rect
-            x="70"
-            y="10"
-            width="36"
-            height="24"
-            rx="2"
-            fill="#facc15"
-            animate={{ y: [10, 8, 10] }}
-            transition={{ repeat: Infinity, duration: 0.6 }}
-          />
-
-          {/* TRUCK BODY */}
-          <rect x="20" y="26" width="90" height="28" rx="4" fill="#22c55e" />
-          <rect x="110" y="34" width="30" height="20" rx="3" fill="#16a34a" />
-
-          {/* CAB */}
-          <rect x="120" y="28" width="26" height="26" rx="4" fill="#15803d" />
-
-          {/* WHEELS */}
-          <circle cx="44" cy="60" r="8" fill="#020617" />
-          <circle cx="44" cy="60" r="3" fill="#94a3b8" />
-
-          <circle cx="96" cy="60" r="8" fill="#020617" />
-          <circle cx="96" cy="60" r="3" fill="#94a3b8" />
-        </svg>
-      </motion.div>
-    </Box>
-  );
-}
-
-async function loadReviews(productId) {
-  try {
-    const res = await fetch(
-      `https://demo-springboot-zdym.onrender.com/reviews/${productId}`,
-      {
+  const handleAddReview = useCallback(async (productId) => {
+    if (!newComment.trim()) return;
+    try {
+      const res = await fetch(`${API_REVIEWS}/${productId}`, {
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-        }
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          stars: newRating,
+          text: newComment
+        })
+      });
+      if (res.ok) {
+        const savedReview = await res.json();
+        setReviews(prev => ({
+          ...prev,
+          [productId]: [savedReview, ...(prev[productId] || [])]
+        }));
+        setNewComment("");
+        setNewRating(5);
       }
-    );
-
-    if (!res.ok) throw new Error("Failed to load reviews");
-
-    const data = await res.json();
-
-    setReviews((prev) => ({
-      ...prev,
-      [productId]: data
-    }));
-  } catch (err) {
-    console.error("Review load failed", err);
-  }
-}
-
-async function checkout() {
-  try {
-    if (placing) return;
-    setPlacing(true);
-
-    const items = Object.entries(cart)
-      .filter(([_, qty]) => qty > 0)
-      .map(([id, qty]) => {
-        const product = products.find(
-          (p) => getId(p) === id
-        );
-        return (
-          product && {
-            productId: getId(product),
-            name: product.name,
-            price: product.price,
-            count: qty
-          }
-        );
-      })
-      .filter(Boolean);
-
-    if (!items.length) {
-      alert("🛒 Cart is empty");
-      return;
+    } catch {
+      alert("Failed to post review");
     }
+  }, [newComment, newRating, token]);
 
-    const res = await fetch(API_ORDERS, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(items)
-    });
+  const getAverageRating = (productId) => {
+    const prodReviews = reviews[productId];
+    if (!prodReviews) return 0; // Loading or no data yet
+    if (prodReviews.length === 0) return 0;
+    const sum = prodReviews.reduce((a, b) => a + (Number(b.stars) || Number(b.rating) || 0), 0);
+    return sum / prodReviews.length;
+  };
 
-    // 🚦 Rate limit handling
-    if (res.status === 429) {
-      const msg = await res.text();
-      alert(msg || "🚫 Too many orders. Please wait 1 minute and try again.");
-      return;
+  const checkout = useCallback(async () => {
+    try {
+      if (placing) return;
+      setPlacing(true);
+      const items = Object.entries(cart)
+        .filter(([id, qty]) => id && qty > 0)
+        .map(([id, qty]) => {
+          const product = products.find(p => getId(p) === id);
+          return product && { productId: getId(product), name: product.name, price: product.price, count: qty };
+        }).filter(Boolean);
+
+      if (!items.length) {
+        alert("🛒 Your cart is empty");
+        return;
+      }
+
+      const res = await fetch(API_ORDERS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(items)
+      });
+
+      if (res.status === 429) {
+        alert("🚫 Too many orders. Please wait 1 minute and try again.");
+        return;
+      }
+      if (!res.ok) throw new Error();
+
+      setCart({});
+      setSuccessOpen(true);
+      setSidebarOpen(false);
+    } catch {
+      alert("❌ Session expired. Please login again.");
+      logout();
+    } finally {
+      setPlacing(false);
     }
+  }, [placing, cart, products, token, logout]);
 
-    if (!res.ok) throw new Error();
-
-    setCart({});
-    setSuccessOpen(true);
-  } catch {
-    alert("❌ Session expired. Please login again.");
-    logout();
-  } finally {
-    setPlacing(false);
-  }
-}
-
-function logout() {
-  localStorage.clear();
-  navigate("/login", { replace: true });
-}
-
-
-  // =============================
-  // UI
-  // =============================
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "#020617",
-        color: "white"
-      }}
-    >
-      {/* 🌟 GLASS NAVBAR */}
-      {/* 🌟 COLLAPSIBLE GLASS NAVBAR */}
-<motion.div initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-  <Box
-    sx={{
-      position: "sticky",
-      top: 0,
-      zIndex: 1000,
-      backdropFilter: "blur(22px)",
-      background:
-        "linear-gradient(180deg, rgba(15,23,42,0.85), rgba(15,23,42,0.65))",
-      borderBottom: "1px solid rgba(255,255,255,0.08)",
-      boxShadow: "0 20px 60px rgba(0,0,0,0.7)"
-    }}
-  >
-    {/* TOP BAR */}
-    <Box
-      sx={{
-        px: 3,
-        py: 1.8,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center"
-      }}
-    >
-      {/* LEFT */}
-      <Box>
-        <Typography fontWeight="bold" fontSize="1.25rem">
-          🛍️ <span style={{ color: "#22c55e" }}>ShopLive</span>
-        </Typography>
-        <Typography fontSize="0.8rem" color="#94a3b8">
-          Welcome,{" "}
-          <span style={{ color: "#22c55e", fontWeight: 500 }}>
-            {username}
-          </span>
-        </Typography>
-      </Box>
-
-      {/* DESKTOP ACTIONS */}
+    <Box sx={{ minHeight: "100vh", bgcolor: "#020617", color: "white" }}>
+      {/* ===================== */}
+      {/* MODERN GLASS NAVBAR */}
+      {/* ===================== */}
       <Box
+        component="nav"
         sx={{
-          display: { xs: "none", md: "flex" },
-          alignItems: "center",
-          gap: 1.5
+          position: "sticky",
+          top: 0,
+          zIndex: 1000,
+          background: "rgba(2, 6, 23, 0.8)",
+          backdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
         }}
       >
-        {/* SEARCH */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            bgcolor: "rgba(255,255,255,0.08)",
-            borderRadius: 999,
-            px: searchOpen ? 1 : 0,
-            transition: "0.3s"
-          }}
-        >
-          <AnimatePresence>
-            {searchOpen && (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 200, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.25 }}
+        <Container maxWidth="xl">
+          <Box sx={{ height: "80px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, cursor: "pointer" }} onClick={() => navigate("/")}>
+              <Box sx={{ p: 1, borderRadius: "12px", bgcolor: "rgba(34, 197, 94, 0.1)", color: "var(--primary)" }}>
+                <ShoppingBag size={24} />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: "-0.5px" }}>
+                Shop<span style={{ color: "var(--primary)" }}>Live</span>
+              </Typography>
+            </Box>
+
+            <Box sx={{ flex: 1, maxWidth: "500px", mx: 4, display: { xs: "none", md: "block" } }}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search premium products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: <Search size={18} style={{ marginRight: 12, color: "var(--text-secondary)" }} />,
+                  sx: {
+                    borderRadius: "50px",
+                    bgcolor: "rgba(255,255,255,0.05)",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+                    "&.Mui-focused fieldset": { borderColor: "var(--primary)" },
+                    color: "white"
+                  }
+                }}
+              />
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <IconButton
+                onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+                sx={{
+                  display: { xs: "flex", md: "none" },
+                  color: mobileSearchOpen ? "var(--primary)" : "white",
+                  bgcolor: "rgba(255,255,255,0.05)"
+                }}
               >
-                <TextField
-                  size="small"
-                  autoFocus
-                  placeholder="Search products…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  variant="standard"
-                  InputProps={{ disableUnderline: true }}
-                  sx={{
-                    px: 1,
-                    input: { color: "white" }
-                  }}
-                />
+                <Search size={22} />
+              </IconButton>
+
+              <IconButton
+                onClick={() => navigate("/dashboard")}
+                sx={{
+                  display: { xs: "flex", sm: "none" },
+                  color: "white",
+                  bgcolor: "rgba(255,255,255,0.05)"
+                }}
+              >
+                <Package size={22} />
+              </IconButton>
+
+              <Button
+                onClick={() => navigate("/dashboard")}
+                startIcon={<Package size={18} />}
+                sx={{
+                  color: "white",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  display: { xs: "none", sm: "flex" },
+                  "&:hover": { color: "var(--primary)" }
+                }}
+              >
+                Orders
+              </Button>
+
+              <IconButton
+                onClick={() => setSidebarOpen(true)}
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.05)",
+                  color: "white",
+                  "&:hover": { bgcolor: "rgba(34, 197, 94, 0.1)", color: "var(--primary)" }
+                }}
+              >
+                <Badge badgeContent={totalItems} color="success" overlap="circular">
+                  <ShoppingCart size={22} />
+                </Badge>
+              </IconButton>
+
+              <Box sx={{ mx: 1, height: "24px", width: "1px", bgcolor: "rgba(255,255,255,0.1)", display: { xs: "none", sm: "block" } }} />
+
+              <IconButton
+                onClick={logout}
+                sx={{
+                  color: "var(--accent)",
+                  "&:hover": { bgcolor: "rgba(244, 63, 94, 0.1)" }
+                }}
+              >
+                <LogOut size={22} />
+              </IconButton>
+            </Box>
+          </Box>
+
+          {/* MOBILE SEARCH BAR */}
+          <AnimatePresence>
+            {mobileSearchOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Box sx={{ pb: 3, pt: 1, display: { xs: "block", md: "none" } }}>
+                  <TextField
+                    fullWidth
+                    autoFocus
+                    size="small"
+                    placeholder="Search premium products..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: <Search size={18} style={{ marginRight: 12, color: "var(--text-secondary)" }} />,
+                      sx: {
+                        borderRadius: "15px",
+                        bgcolor: "rgba(255,255,255,0.05)",
+                        "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                        "&.Mui-focused fieldset": { borderColor: "var(--primary)" },
+                        color: "white"
+                      }
+                    }}
+                  />
+                </Box>
               </motion.div>
             )}
           </AnimatePresence>
-
-          <IconButton
-            onClick={() => setSearchOpen((p) => !p)}
-            sx={{ color: "white" }}
-          >
-            <Search />
-          </IconButton>
-        </Box>
-
-        {/* ORDERS */}
-        <Button
-          startIcon={<List />}
-          onClick={() => navigate("/dashboard")}
-          sx={{
-            color: "#e5e7eb",
-            textTransform: "none",
-            "&:hover": { color: "#22c55e" }
-          }}
-        >
-          Orders
-        </Button>
-
-        {/* CART */}
-        <IconButton
-          onClick={() => setSidebarOpen(true)}
-          sx={{
-            bgcolor: "rgba(255,255,255,0.12)",
-            "&:hover": { bgcolor: "rgba(255,255,255,0.2)" }
-          }}
-        >
-          <Badge badgeContent={totalItems} color="error">
-            <ShoppingCart />
-          </Badge>
-        </IconButton>
-
-        {/* LOGOUT */}
-        <Button
-          onClick={logout}
-          sx={{
-            ml: 1,
-            textTransform: "none",
-            borderRadius: 999,
-            px: 2.5,
-            fontWeight: 600,
-            background:
-              "linear-gradient(135deg,#ef4444,#dc2626)",
-            color: "white"
-          }}
-        >
-          Logout
-        </Button>
+        </Container>
       </Box>
 
-      {/* MOBILE TOGGLE */}
-      <IconButton
-        onClick={() => setNavOpen((p) => !p)}
-        sx={{
-          display: { xs: "flex", md: "none" },
-          bgcolor: "rgba(255,255,255,0.12)"
-        }}
-      >
-        <Menu />
-      </IconButton>
-    </Box>
-
-    {/* MOBILE PANEL */}
-    <motion.div
-      initial={false}
-      animate={navOpen ? "open" : "closed"}
-      variants={{
-        open: { height: "auto", opacity: 1 },
-        closed: { height: 0, opacity: 0 }
-      }}
-      transition={{ duration: 0.3 }}
-      style={{ overflow: "hidden" }}
-    >
-      <Box
-        sx={{
-          px: 3,
-          py: 2.5,
-          display: { xs: "flex", md: "none" },
-          flexDirection: "column",
-          gap: 2.2,
-          background:
-            "linear-gradient(180deg, rgba(15,23,42,0.95), rgba(15,23,42,0.85))",
-          borderTop: "1px solid rgba(255,255,255,0.08)"
-        }}
-      >
-        {/* MOBILE SEARCH */}
-        <Box display="flex" justifyContent="space-between">
-          <Typography fontWeight={600}>Menu</Typography>
-          <IconButton
-            onClick={() => setMobileSearchOpen((p) => !p)}
-            sx={{ color: "white" }}
-          >
-            <Search />
-          </IconButton>
-        </Box>
-
-        <motion.div
-          animate={{
-            height: mobileSearchOpen ? "auto" : 0,
-            opacity: mobileSearchOpen ? 1 : 0
-          }}
-          transition={{ duration: 0.25 }}
-          style={{ overflow: "hidden" }}
-        >
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search products…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            sx={{
-              bgcolor: "rgba(255,255,255,0.08)",
-              borderRadius: 2,
-              input: { color: "white" }
-            }}
-          />
-        </motion.div>
-
-        <Button startIcon={<List />} onClick={() => navigate("/dashboard")}>
-          My Orders
-        </Button>
-
-        <Button
-          startIcon={<ShoppingCart />}
-          onClick={() => setSidebarOpen(true)}
-        >
-          Cart ({totalItems})
-        </Button>
-
-        <Button
-          startIcon={<LogOut />}
-          onClick={logout}
-          color="error"
-        >
-          Logout
-        </Button>
-      </Box>
-    </motion.div>
-  </Box>
-</motion.div>
-
-
-
-      {/* 🛒 CART DRAWER */}
-      <Drawer
-        anchor="right"
-        open={sidebarOpen}
-        onClose={() =>
-          setSidebarOpen(false)
-        }
-      >
-        <Box
-          sx={{
-            width: 320,
-            p: 2,
-            bgcolor: "#0f172a",
-            color: "white"
-          }}
-        >
-          <Typography variant="h6">
-            🛒 My Cart
-          </Typography>
-
-          {Object.entries(cart).map(
-            ([id, qty]) => {
-              const product =
-                products.find(
-                  (p) => getId(p) === id
-                );
-              if (!product || qty === 0)
-                return null;
-
-              return (
-                <Box
-                  key={id}
-                  p={2}
-                  mb={1}
-                  sx={{
-                    bgcolor: "#1e293b",
-                    borderRadius: 2
-                  }}
-                >
-                  <Typography fontWeight="bold">
-                    {product.name}
-                  </Typography>
-                  <Typography>
-                    Qty: {qty}
-                  </Typography>
-                </Box>
-              );
-            }
-          )}
-
-          <Button
-            fullWidth
-            sx={{ mt: 2 }}
-            disabled={
-              placing || totalItems === 0
-            }
-            onClick={checkout}
-            variant="contained"
-          >
-            {placing
-              ? "Placing..."
-              : "Checkout"}
-          </Button>
-        </Box>
-      </Drawer>
-
-      {/* 🧱 PRODUCT GRID */}
-      <Box p={4}>
-        {!search.trim() && <ModernCarousel slides={slides} />}
-        <Grid container spacing={3}>
-          {(loading
-            ? Array.from({ length: 6 })
-            : filteredProducts
-          ).map((product, i) => {
-            if (loading)
-              return (
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                  md={4}
-                  key={i}
-                >
-                  <Skeleton
-                    height={300}
-                    variant="rounded"
-                  />
-                </Grid>
-              );
-
-            const id = getId(product);
-            const wish =
-              wishlist.includes(id);
-
-            return (
-              <Grid item xs={12} sm={6} md={4} sx={{ display: "flex" }} key={id}>
-
-                <motion.div
-  style={{ width: "100%" }}
-  initial={{ opacity: 0, y: 40 }}
-  whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, amount: 0.3 }}
-  transition={{ duration: 0.6 }}
-  whileHover={{ y: -10 }}
->
-<Box
-  onClick={() => setSelected(product)}
-  sx={{
-    position: "relative",
-    height: "100%",            // 🔥 REQUIRED
-    minHeight: 420,            // 🔥 SAME SIZE FOR ALL
-    display: "flex",
-    flexDirection: "column",
-    background:
-      "linear-gradient(180deg, rgba(15,23,42,0.9), rgba(2,6,23,0.9))",
-    border: "1px solid rgba(255,255,255,0.15)",
-    clipPath:
-      "polygon(0 0, 96% 0, 100% 6%, 100% 100%, 4% 100%, 0 94%)",
-    boxShadow: "0 30px 80px rgba(0,0,0,0.7)"
-  }}
->
-
-    {/* IMAGE */}
-    <Box
-      component="img"
-      src={`data:image/jpeg;base64,${product.image}`}
-      alt={product.name}
-      sx={{
-        width: "100%",
-        height: 180,
-        objectFit: "cover",
-        borderBottom: "1px solid rgba(255,255,255,0.12)"
-      }}
-    />
-
-    {/* CONTENT */}
-    <Box p={2.5}>
-      <Typography fontWeight="bold" noWrap>
-        {product.name}
-      </Typography>
-
-      <Typography
-        variant="body2"
-        sx={{ color: "#94a3b8", my: 1 }}
-      >
-        {product.description}
-      </Typography>
-
-      <Typography
-        fontWeight="bold"
-        sx={{ color: "#22c55e" }}
-      >
-        ₹{product.price}
-      </Typography>
-    </Box>
-
-    {/* ACTION BAR */}
-    <Box
-  px={2.5}
-  pb={2}
-  mt="auto"        // 🔥 THIS locks it to bottom
-  display="flex"
-  justifyContent="space-between"
-  alignItems="center"
->
-
-      <Box display="flex" alignItems="center" gap={1}>
-        <Button
-          size="small"
-          onClick={() => removeFromCart(id)}
-        >
-          −
-        </Button>
-
-        <Typography fontWeight="bold">
-          {cart[id] || 0}
-        </Typography>
-
-        <Button
-          size="small"
-          onClick={() => addToCart(id)}
-        >
-          +
-        </Button>
-      </Box>
-
-      <IconButton
-        onClick={() => toggleWishlist(id)}
-        sx={{ color: wish ? "hotpink" : "white" }}
-      >
-        <Heart fill={wish ? "hotpink" : "none"} />
-      </IconButton>
-    </Box>
-  </Box>
-</motion.div>
-
-              </Grid>
-            );
-          })}
-        </Grid>
-
-        {filteredProducts.length === 0 &&
-          !loading && (
-            <Typography
-              align="center"
-              sx={{ mt: 6, color: "#94a3b8" }}
-            >
-              No products found 🔍
-            </Typography>
-          )}
-          {/* 🎉 SUCCESS POPUP */}
-<AnimatePresence>
-  {successOpen && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 2000,
-        background:
-          "radial-gradient(circle at top, rgba(34,197,94,0.15), rgba(2,6,23,0.96))",
-        backdropFilter: "blur(18px)"
-      }}
-    >
-      <Confetti
-        recycle={false}
-        numberOfPieces={250}
-        gravity={0.18}
-      />
-
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          px: 2
-        }}
-      >
-        <motion.div
-          initial={{ y: 60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          {/* SUCCESS PANEL */}
-          <Box
-            sx={{
-              position: "relative",
-              maxWidth: 420,
-              width: "100%",
-              p: 4,
-              textAlign: "center",
-              bgcolor: "rgba(15,23,42,0.85)",
-              backdropFilter: "blur(22px)",
-              border:
-                "1px solid rgba(255,255,255,0.12)",
-              boxShadow:
-                "0 50px 140px rgba(34,197,94,0.35)"
-            }}
-          >
-            {/* GLOW RING */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: "50%",
-                margin: "0 auto 20px",
-                background:
-                  "radial-gradient(circle, rgba(34,197,94,0.9), rgba(34,197,94,0.2))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow:
-                  "0 0 40px rgba(34,197,94,0.8)"
-              }}
-            >
-              <Typography
-                sx={{
-                  fontSize: "2.4rem",
-                  fontWeight: "bold",
-                  color: "#020617"
+      <Box sx={{ py: 4, px: { xs: 2, md: 4 } }}>
+        <Container maxWidth="xl">
+          <Box sx={{ mb: 6 }}>
+            <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, letterSpacing: "-1px", minHeight: "48px" }}>
+              <Typewriter
+                onInit={(typewriter) => {
+                  typewriter
+                    .typeString(`Welcome back, <span style="color: var(--primary)">${localStorage.getItem("username") || "Guest"}</span>`)
+                    .start();
                 }}
-              >
-                ✓
-              </Typography>
-            </motion.div>
-            <DeliveryAnimation />
-
-<Typography variant="h4" fontWeight="bold" mb={1}>
-  Order on the way!
-</Typography>
-
-<Typography sx={{ color: "#94a3b8", mb: 3 }}>
-  Your package is rolling towards you 🚚
-</Typography>
-
-            {/* CTA */}
-            <Button
-              fullWidth
-              size="large"
-              onClick={() => setSuccessOpen(false)}
-              sx={{
-                py: 1.4,
-                fontWeight: "bold",
-                borderRadius: 999,
-                bgcolor: "#22c55e",
-                color: "#020617",
-                "&:hover": {
-                  bgcolor: "#4ade80"
-                }
-              }}
-            >
-              Continue Shopping
-            </Button>
+                options={{
+                  autoStart: true,
+                  delay: 50,
+                  cursor: "▋",
+                  wrapperClassName: "typewriter-wrapper"
+                }}
+              />
+            </Typography>
+            <Typography sx={{ color: "var(--text-secondary)", fontSize: "1.1rem" }}>
+              Your curated premium selection is ready.
+            </Typography>
           </Box>
-        </motion.div>
-      </Box>
-    </motion.div>
-  )}
-</AnimatePresence>
 
+          {!search.trim() && carouselSlides.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+              <Box sx={{ mb: 10 }}>
+                <ModernCarousel slides={carouselSlides} onProductClick={(id) => setSelected(products.find(p => getId(p) === id))} />
+              </Box>
+            </motion.div>
+          )}
 
-      </Box>
-
-      {/* 📦 PRODUCT MODAL */}
-      {/* 🪟 MODERN PRODUCT SHEET */}
-{/* 🪟 PRODUCT DIALOG WITH CHECKOUT */}
-<Drawer
-  anchor="bottom"
-  open={!!selected}
-  onClose={() => setSelected(null)}
-  PaperProps={{
-    sx: {
-      height: { xs: "92vh", md: "85vh" },
-      bgcolor: "#020617",
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24
-    }
-  }}
->
-  {selected && (() => {
-    const id = getId(selected);
-    if (!reviews[id]) loadReviews(id);
-
-    const count = cart[id] || 0;
-    const productReviews = reviews[id] || [];
-
-    async function quickCheckout() {
-      try {
-        const res = await fetch(API_ORDERS, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify([
-            {
-              productId: id,
-              name: selected.name,
-              price: selected.price,
-              count: count || 1
-            }
-          ])
-        });
-
-        if (!res.ok) throw new Error();
-        setCart({});
-        setSuccessOpen(true);
-        setSelected(null);
-      } catch {
-        alert("Checkout failed. Please login again.");
-        logout();
-      }
-    }
-
-    return (
-      <motion.div
-        initial={{ y: 80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        style={{ height: "100%" }}
-      >
-        {/* HEADER */}
-        <Box
-          px={3}
-          py={2}
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          borderBottom="1px solid rgba(255,255,255,0.08)"
-        >
-          <Typography fontWeight="bold">
-            {selected.name}
-          </Typography>
-          <IconButton onClick={() => setSelected(null)}>
-            ✕
-          </IconButton>
-        </Box>
-
-        {/* CONTENT */}
-        <Box
-          p={3}
-          sx={{
-            overflowY: "auto",
-            height: "calc(100% - 64px)"
-          }}
-        >
           <Grid container spacing={4}>
-            {/* IMAGE */}
-            <Grid item xs={12} md={6}>
+            {loading ? (
+              Array.from({ length: 8 }).map((__, i) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
+                  <Skeleton variant="rectangular" height={420} sx={{ borderRadius: "24px", bgcolor: "rgba(255,255,255,0.05)" }} />
+                </Grid>
+              ))
+            ) : filteredProducts.length > 0 ? (
+              filteredProducts.map((p) => {
+                const id = getId(p);
+                const isWished = wishlist.includes(id);
+                const avgRating = getAverageRating(id);
+                return (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={id}>
+                    <Box
+                      onClick={() => setSelected(p)}
+                      sx={{
+                        position: "relative",
+                        cursor: "pointer",
+                        transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                        "&:hover": { transform: "translateY(-12px)" }
+                      }}
+                    >
+                      {/* Image Container with Editorial Ratio */}
+                      <Box
+                        sx={{
+                          position: "relative",
+                          height: "400px",
+                          borderRadius: "32px",
+                          overflow: "hidden",
+                          bgcolor: "rgba(255,255,255,0.03)",
+                          mb: 2,
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          boxShadow: "0 10px 40px -15px rgba(0,0,0,0.5)"
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={`data:image/jpeg;base64,${p.image}`}
+                          alt={p.name}
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            transition: "transform 0.8s ease",
+                            "&:hover": { transform: "scale(1.1)" }
+                          }}
+                        />
+
+                        {/* Wishlist Button Overlay */}
+                        <IconButton
+                          onClick={(e) => { e.stopPropagation(); toggleWishlist(id); }}
+                          sx={{
+                            position: "absolute",
+                            top: 16,
+                            right: 16,
+                            bgcolor: "rgba(0,0,0,0.4)",
+                            backdropFilter: "blur(4px)",
+                            color: isWished ? "var(--accent)" : "white",
+                            "&:hover": { bgcolor: "white", color: "#020617" }
+                          }}
+                        >
+                          <Heart size={18} fill={isWished ? "var(--accent)" : "none"} />
+                        </IconButton>
+
+                        {/* Price Tag Overlay */}
+                        <Box sx={{
+                          position: "absolute",
+                          bottom: 16,
+                          left: 16,
+                          bgcolor: "rgba(34, 197, 94, 0.95)",
+                          color: "#020617",
+                          px: 2,
+                          py: 0.5,
+                          borderRadius: "12px",
+                          fontWeight: 900,
+                          fontSize: "1rem"
+                        }}>
+                          ₹{p.price}
+                        </Box>
+                      </Box>
+
+                      {/* Clean Text Content */}
+                      <Box sx={{ px: 1 }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.4)", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
+                            {p.category || "Lifestyle"}
+                          </Typography>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            {avgRating > 0 ? (
+                              <>
+                                <Star size={12} fill="var(--primary)" color="var(--primary)" />
+                                <Typography variant="caption" sx={{ color: "white", fontWeight: 700 }}>{avgRating.toFixed(1)}</Typography>
+                              </>
+                            ) : (
+                              <Typography variant="caption" sx={{ color: "var(--primary)", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>New</Typography>
+                            )}
+                          </Box>
+                        </Box>
+
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: "white", mb: 0.5 }}>
+                          {truncate(p.name, 22)}
+                        </Typography>
+
+                        <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            onClick={(e) => { e.stopPropagation(); addToCart(id); }}
+                            sx={{
+                              borderRadius: "15px",
+                              bgcolor: "white",
+                              color: "#020617",
+                              fontWeight: 800,
+                              fontSize: "0.8rem",
+                              "&:hover": { bgcolor: "var(--primary)", color: "white" }
+                            }}
+                          >
+                            Quick Add
+                          </Button>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Grid>
+                );
+              })
+            ) : (
+              <Box sx={{ width: "100%", py: 10, textAlign: "center" }}>
+                <Typography variant="h5" sx={{ color: "var(--text-secondary)" }}>No products found matching your search.</Typography>
+              </Box>
+            )}
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ===================== */}
+      {/* PRODUCT DETAIL DIALOG */}
+      {/* ===================== */}
+      <Dialog
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: "32px",
+            bgcolor: "rgba(10, 15, 30, 0.98)",
+            backdropFilter: "blur(30px)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            color: "white",
+            overflowX: "hidden",
+            overflowY: "auto"
+          }
+        }}
+      >
+        {selected && (
+          <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, minHeight: 500 }}>
+            {/* Left: Product Image */}
+            <Box sx={{ flex: 1, position: "relative" }}>
               <Box
                 component="img"
                 src={`data:image/jpeg;base64,${selected.image}`}
-                alt={selected.name}
-                sx={{
-                  width: "100%",
-                  height: 340,
-                  objectFit: "cover",
-                  borderRadius: 3
-                }}
+                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
-            </Grid>
-
-            {/* DETAILS */}
-            <Grid item xs={12} md={6}>
-              <Typography sx={{ color: "#cbd5f5", mb: 2 }}>
-                {selected.description}
-              </Typography>
-
-              <Typography
-                sx={{
-                  fontSize: "1.8rem",
-                  fontWeight: "bold",
-                  color: "#22c55e",
-                  mb: 3
-                }}
+              <IconButton
+                onClick={() => setSelected(null)}
+                sx={{ position: "absolute", top: 16, left: 16, bgcolor: "rgba(0,0,0,0.5)", color: "white", "&:hover": { bgcolor: "rgba(0,0,0,0.7)" } }}
               >
-                ₹{selected.price}
-              </Typography>
+                <X size={20} />
+              </IconButton>
+            </Box>
 
-              {/* QUANTITY */}
-              <Box display="flex" gap={2} mb={3}>
-                <Button
-                  variant="outlined"
-                  disabled={count === 0}
-                  onClick={() => removeFromCart(id)}
-                >
-                  −
-                </Button>
+            {/* Right: Content & Reviews */}
+            <Box sx={{ flex: 1.2, display: "flex", flexDirection: "column", height: { xs: "auto", md: "80vh" } }}>
+              <Box sx={{ p: 4, overflowY: { xs: "visible", md: "auto" }, flexGrow: 1 }}>
+                <Typography variant="caption" sx={{ color: "var(--primary)", fontWeight: 800, textTransform: "uppercase", letterSpacing: 2 }}>
+                  {selected.category || "EXCLUSIVELY SHOPLIVE"}
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 900, mb: 1 }}>{selected.name}</Typography>
 
-                <Typography fontWeight="bold">
-                  {count}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 900, color: "var(--primary)" }}>₹{selected.price}</Typography>
+                  <Divider orientation="vertical" flexItem sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Rating value={getAverageRating(getId(selected))} precision={0.5} readOnly size="small" />
+                    <Typography variant="body2" sx={{ color: "var(--text-secondary)" }}>
+                      ({reviews[getId(selected)]?.length || 0} reviews)
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Typography sx={{ color: "var(--text-secondary)", mb: 4, lineHeight: 1.7, fontSize: "1.05rem" }}>
+                  {selected.description}
                 </Typography>
 
-                <Button
-                  variant="contained"
-                  onClick={() => addToCart(id)}
-                >
-                  +
-                </Button>
+                <Divider sx={{ mb: 4, borderColor: "rgba(255,255,255,0.1)" }} />
+
+                {/* Reviews Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <MessageSquare size={20} /> User Reviews
+                  </Typography>
+
+                  {/* Review Form */}
+                  <Box sx={{ mb: 5, p: 3, borderRadius: "20px", bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>Write a review</Typography>
+                    <Rating
+                      value={newRating}
+                      onChange={(_, v) => setNewRating(v)}
+                      sx={{ mb: 2, color: "var(--primary)" }}
+                    />
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={2}
+                      variant="standard"
+                      placeholder="Share your experience..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      InputProps={{
+                        disableUnderline: true,
+                        sx: { color: "white", fontSize: "0.95rem" }
+                      }}
+                      sx={{ mb: 2 }}
+                    />
+                    <Button
+                      variant="contained"
+                      endIcon={<Send size={16} />}
+                      onClick={() => handleAddReview(getId(selected))}
+                      sx={{ borderRadius: "100px", px: 3 }}
+                      disabled={!newComment.trim()}
+                    >
+                      Post Review
+                    </Button>
+                  </Box>
+
+                  {/* Reviews List */}
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {(reviews[getId(selected)] || []).length > 0 ? (
+                      reviews[getId(selected)].map((r) => (
+                        <Box key={r.id || r.createdAt}>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                              <Avatar sx={{ width: 32, height: 32, fontSize: "0.8rem", bgcolor: "var(--primary)", color: "#020617" }}>
+                                {(r.username || "C")[0]}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>{r.username || "Customer"}</Typography>
+                                <Rating value={r.stars || 5} size="small" readOnly sx={{ color: "var(--primary)" }} />
+                              </Box>
+                            </Box>
+                            <Typography variant="caption" sx={{ color: "var(--text-secondary)" }}>
+                              {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "Just now"}
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", pl: 6 }}>{r.text}</Typography>
+                        </Box>
+                      ))
+                    ) : (
+                      <Typography sx={{ color: "var(--text-secondary)", textAlign: "center", fontStyle: "italic", py: 2 }}>
+                        No reviews yet. Be the first to review this product!
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
               </Box>
 
-              {/* CHECKOUT */}
-              <Button
-                fullWidth
-                disabled={count === 0}
-                onClick={quickCheckout}
-                sx={{
-                  py: 1.4,
-                  borderRadius: 3,
-                  fontWeight: "bold",
-                  bgcolor: "#22c55e",
-                  color: "#020617",
-                  mb: 4
-                }}
-              >
-                ⚡ Checkout Now
-              </Button>
-
-              {/* REVIEWS */}
-              <Typography fontWeight="bold" mb={1}>
-                Reviews
-              </Typography>
-
-              {productReviews.map((r, i) => (
-                <Box
-                  key={i}
-                  p={1.5}
-                  mb={1}
+              {/* Bottom Sticky Action */}
+              <Box sx={{ p: 4, bgcolor: "rgba(0,0,0,0.3)", borderTop: "1px solid rgba(255,255,255,0.1)", display: "flex", gap: 2 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  onClick={() => { addToCart(getId(selected)); setSelected(null); }}
+                  sx={{ py: 2, borderRadius: "16px", fontSize: "1.1rem", fontWeight: 800 }}
+                >
+                  Add to Shopping Bag
+                </Button>
+                <IconButton
+                  onClick={() => toggleWishlist(getId(selected))}
                   sx={{
+                    width: 64,
                     bgcolor: "rgba(255,255,255,0.05)",
-                    borderRadius: 2
+                    color: wishlist.includes(getId(selected)) ? "var(--accent)" : "white",
+                    borderRadius: "16px",
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.1)" }
                   }}
                 >
-                  <Typography
-                    fontSize="0.85rem"
-                    color="#22c55e"
-                    fontWeight="bold"
-                  >
-                    {r.username}
-                  </Typography>
+                  <Heart size={24} fill={wishlist.includes(getId(selected)) ? "var(--accent)" : "none"} />
+                </IconButton>
+              </Box>
+            </Box>
+          </Box>
+        )}
+      </Dialog>
 
-                  <Typography fontSize="0.85rem">
-                    {r.text}
-                  </Typography>
-                </Box>
-              ))}
-
-              <StarReviewForm
-                onSubmit={(text, stars) =>
-                  submitReview(id, text, stars)
-                }
-              />
-            </Grid>
-          </Grid>
+      {/* CART DRAWER & SUCCESS DIALOG remain (with same logic but slightly updated spacing) */}
+      <Drawer
+        anchor="right"
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: "100%", sm: 400 },
+            bgcolor: "rgba(10, 15, 30, 0.98)",
+            backdropFilter: "blur(30px)",
+            color: "white",
+            borderLeft: "1px solid rgba(255, 255, 255, 0.1)"
+          }
+        }}
+      >
+        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ p: 4, display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+            <Typography variant="h5" sx={{ fontWeight: 900 }}>Your Bag</Typography>
+            <IconButton onClick={() => setSidebarOpen(false)} sx={{ color: "white" }}>
+              <X size={24} />
+            </IconButton>
+          </Box>
+          <Box sx={{ flex: 1, overflowY: "auto", p: 3 }}>
+            {totalItems === 0 ? (
+              <Box sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 2 }}>
+                <ShoppingBag size={64} style={{ opacity: 0.1 }} />
+                <Typography sx={{ color: "var(--text-secondary)", fontWeight: 700 }}>Nothing in your bag yet.</Typography>
+              </Box>
+            ) : (
+              Object.entries(cart).map(([id, qty]) => {
+                const p = products.find(prod => getId(prod) === id);
+                if (!p || qty === 0) return null;
+                return (
+                  <Box key={id} sx={{ display: "flex", gap: 2, mb: 3, p: 2, borderRadius: "20px", bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <Box component="img" src={`data:image/jpeg;base64,${p.image}`} sx={{ width: 80, height: 80, borderRadius: "14px", objectFit: "cover" }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontWeight: 800, mb: 0.5 }}>{p.name}</Typography>
+                      <Typography variant="body2" sx={{ color: "var(--primary)", fontWeight: 800 }}>₹{p.price}</Typography>
+                      <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 2 }}>
+                        <IconButton size="small" onClick={() => removeFromCart(id)} sx={{ color: "white", bgcolor: "rgba(255,255,255,0.05)" }}>-</IconButton>
+                        <Typography sx={{ fontWeight: 900 }}>{qty}</Typography>
+                        <IconButton size="small" onClick={() => addToCart(id)} sx={{ color: "white", bgcolor: "rgba(255,255,255,0.05)" }}>+</IconButton>
+                      </Box>
+                    </Box>
+                  </Box>
+                );
+              })
+            )}
+          </Box>
+          {totalItems > 0 && (
+            <Box sx={{ p: 4, borderTop: "1px solid rgba(255,255,255,0.1)", bgcolor: "rgba(0,0,0,0.3)" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+                <Typography sx={{ color: "var(--text-secondary)", fontWeight: 700 }}>Subtotal</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: "var(--primary)" }}>
+                  ₹{Object.entries(cart).reduce((t, [id, q]) => t + (products.find(pr => getId(pr) === id)?.price || 0) * q, 0)}
+                </Typography>
+              </Box>
+              <Button fullWidth variant="contained" size="large" onClick={checkout} disabled={placing} sx={{ py: 2, borderRadius: "16px", fontWeight: 800 }}>
+                {placing ? "Processing..." : "Secure Checkout"}
+              </Button>
+            </Box>
+          )}
         </Box>
-      </motion.div>
-    );
-  })()}
-</Drawer>
+      </Drawer>
 
-
-   </Box>
-  );
-}
-
-// =============================
-// REVIEW FORM
-// =============================
-function StarReviewForm({ onSubmit }) {
-  const [text, setText] = useState("");
-  const [stars, setStars] = useState(5);
-
-  return (
-    <Box mt={2}>
-      <Box display="flex" gap={1} mb={1}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <Star
-            key={n}
-            size={18}
-            onClick={() => setStars(n)}
-            fill={n <= stars ? "#facc15" : "none"}
-            color="#facc15"
-            style={{ cursor: "pointer" }}
-          />
-        ))}
-      </Box>
-
-      <Box display="flex" gap={1}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Write your review..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <Button
-          variant="contained"
-          onClick={() => {
-            if (!text.trim()) return;
-            onSubmit(text, stars);
-            setText("");
-            setStars(5);
-          }}
-        >
-          Add Review
-        </Button>
-      </Box>
-      
+      <Dialog open={successOpen} onClose={() => setSuccessOpen(false)} PaperProps={{ sx: { borderRadius: "32px", bgcolor: "#020617", border: "1px solid rgba(255,255,255,0.15)", p: 2 } }}>
+        <DialogContent sx={{ textAlign: "center", py: 8 }}>
+          <Box sx={{ mb: 4, display: "inline-flex", p: 3, borderRadius: "50%", bgcolor: "rgba(34, 197, 94, 0.15)", color: "var(--primary)" }}>
+            <ShoppingBag size={64} />
+          </Box>
+          <Typography variant="h3" sx={{ fontWeight: 900, mb: 2 }}>Success!</Typography>
+          <Typography sx={{ color: "var(--text-secondary)", mb: 5, fontSize: "1.1rem" }}>
+            Your order has been placed. Experience the best of ShopLive.
+          </Typography>
+          <Button variant="contained" fullWidth onClick={() => { setSuccessOpen(false); navigate("/dashboard"); }} sx={{ py: 2, borderRadius: "16px", fontWeight: 800 }}>
+            Track My Order
+          </Button>
+        </DialogContent>
+        {successOpen && <Confetti numberOfPieces={250} recycle={false} gravity={0.15} />}
+      </Dialog>
     </Box>
   );
 }

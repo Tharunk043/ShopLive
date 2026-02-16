@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "framer-motion"; // eslint-disable-line
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import Particles from "react-tsparticles";
@@ -17,8 +17,7 @@ import {
   Alert
 } from "@mui/material";
 import { GoogleLogin } from "@react-oauth/google";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { Eye, EyeOff, ArrowLeft, LogIn } from "lucide-react";
 
 export default function Login({ onLogin }) {
   const navigate = useNavigate();
@@ -96,25 +95,47 @@ export default function Login({ onLogin }) {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", position: "relative", bgcolor: "#0b0d10" }}>
-      {/* 🌌 Particle Background */}
+    <Box sx={{ minHeight: "100vh", position: "relative", bgcolor: "#020617", overflow: "hidden" }}>
+      {/* 🌌 Background Orbs */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "-10%",
+          right: "-10%",
+          width: "500px",
+          height: "500px",
+          background: "var(--primary)",
+          filter: "blur(180px)",
+          opacity: 0.1,
+          zIndex: 0
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: "-5%",
+          left: "-5%",
+          width: "400px",
+          height: "400px",
+          background: "var(--secondary)",
+          filter: "blur(150px)",
+          opacity: 0.1,
+          zIndex: 0
+        }}
+      />
+
       <Particles
         init={loadSlim}
         options={{
-          background: { color: "#0b0d10" },
           particles: {
-            number: { value: 40 },
-            size: { value: 1 },
-            opacity: { value: 0.3 },
-            move: { enable: true, speed: 0.2 },
-            links: {
-              enable: true,
-              opacity: 0.15,
-              distance: 150
-            }
+            number: { value: 60 },
+            size: { value: 1.5 },
+            opacity: { value: 0.2 },
+            move: { enable: true, speed: 0.4 },
+            links: { enable: true, opacity: 0.1, distance: 150 }
           }
         }}
-        style={{ position: "absolute" }}
+        style={{ position: "absolute", zIndex: 1 }}
       />
 
       <Container
@@ -122,33 +143,44 @@ export default function Login({ onLogin }) {
         sx={{
           minHeight: "100vh",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
           zIndex: 2
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            backdropFilter: "blur(16px)",
-            borderRadius: 20,
-            padding: 40,
-            width: "100%",
-            border: "1px solid rgba(255,255,255,0.08)"
+        <Button
+          startIcon={<ArrowLeft size={18} />}
+          onClick={() => navigate("/")}
+          sx={{
+            alignSelf: "flex-start",
+            mb: 4,
+            color: "var(--text-secondary)",
+            "&:hover": { color: "var(--primary)" }
           }}
         >
-          {/* ⌨️ Typing animation */}
-          <Typography
-            variant="h4"
-            color="white"
-            fontWeight={600}
-            align="center"
-            mb={1}
-          >
+          Back to home
+        </Button>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="glass-panel"
+          style={{
+            padding: "40px",
+            width: "100%",
+            textAlign: "center"
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <Box sx={{ p: 1.5, borderRadius: "16px", bgcolor: "rgba(34, 197, 94, 0.1)", color: "var(--primary)" }}>
+              <LogIn size={32} />
+            </Box>
+          </Box>
+
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, letterSpacing: "-1px" }}>
             <Typewriter
               options={{
                 strings: ["Welcome back.", "ShopLive Login"],
@@ -159,81 +191,102 @@ export default function Login({ onLogin }) {
             />
           </Typography>
 
-          <Typography
-            align="center"
-            color="rgba(255,255,255,0.6)"
-            mb={3}
-          >
-            Continue your experience
+          <Typography sx={{ color: "var(--text-secondary)", mb: 4 }}>
+            Enter your credentials to continue shopping
           </Typography>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 3, borderRadius: "12px", bgcolor: "rgba(244, 63, 94, 0.1)", color: "#fb7185", border: "1px solid rgba(244, 63, 94, 0.2)" }}>
               {error}
             </Alert>
           )}
 
-          <Box display="flex" justifyContent="center" mb={3}>
+          <Box display="flex" justifyContent="center" mb={4}>
             <GoogleLogin
               onSuccess={handleGoogleLogin}
               onError={() => setError("Google Sign-In Failed")}
               theme="filled_black"
+              shape="pill"
             />
           </Box>
 
-          <Divider sx={{ my: 3, opacity: 0.2 }}>OR</Divider>
+          <Divider sx={{ mb: 4, borderColor: "rgba(255,255,255,0.08)" }}>
+            <Typography variant="body2" sx={{ color: "var(--text-secondary)", px: 2 }}>OR</Typography>
+          </Divider>
 
           <form onSubmit={handlePasswordLogin}>
             <TextField
               fullWidth
-              label="Username"
-              margin="normal"
+              placeholder="Username"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              sx={inputStyles}
             />
 
             <TextField
               fullWidth
               type={showPassword ? "text" : "password"}
-              label="Password"
-              margin="normal"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              sx={{ ...inputStyles, mt: 2 }}
               InputProps={{
                 endAdornment: (
                   <IconButton
                     onClick={() => setShowPassword(!showPassword)}
+                    sx={{ color: "var(--text-secondary)" }}
                   >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </IconButton>
                 )
               }}
             />
 
-            {/* 🎯 Button click animation */}
-            <motion.div whileTap={{ scale: 0.96 }}>
-              <Button
-                fullWidth
-                type="submit"
-                disabled={loading}
-                sx={{
-                  mt: 4,
-                  py: 1.4,
-                  borderRadius: 2,
-                  fontWeight: 600,
-                  bgcolor: "white",
-                  color: "black",
-                  "&:hover": { bgcolor: "#e5e5e5" }
-                }}
-              >
-                {loading ? "Signing in..." : "Login"}
-              </Button>
-            </motion.div>
+            <Button
+              fullWidth
+              type="submit"
+              disabled={loading}
+              variant="contained"
+              sx={{
+                mt: 4,
+                py: 1.8,
+                fontSize: "1rem"
+              }}
+            >
+              {loading ? "Signing in..." : "Continue to Account"}
+            </Button>
           </form>
+
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="body2" sx={{ color: "var(--text-secondary)" }}>
+              Don't have an account?{" "}
+              <Button
+                onClick={() => navigate("/register")}
+                sx={{ p: 0, textTransform: "none", fontWeight: 700, color: "var(--primary)" }}
+              >
+                Sign up now
+              </Button>
+            </Typography>
+          </Box>
         </motion.div>
       </Container>
     </Box>
   );
 }
+
+const inputStyles = {
+  "& .MuiOutlinedInput-root": {
+    color: "white",
+    bgcolor: "rgba(255,255,255,0.03)",
+    borderRadius: "12px",
+    "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+    "&.Mui-focused fieldset": { borderColor: "var(--primary)" },
+  },
+  "& .MuiInputBase-input::placeholder": {
+    color: "var(--text-secondary)",
+    opacity: 1,
+  }
+};

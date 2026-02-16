@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion"; // eslint-disable-line
 import {
   Grid,
   Card,
@@ -7,14 +7,15 @@ import {
   Typography,
   Button,
   Box,
-  Chip
+  Chip,
+  Skeleton,
+  IconButton,
+  Container
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { Package, ArrowLeft, LogOut, RefreshCw } from "lucide-react";
 import { apiFetch } from "./api";
 
-function randomImage(seed) {
-  return `https://picsum.photos/seed/order-${seed}/500/300`;
-}
 
 function formatDate(ts) {
   return new Date(ts).toLocaleString();
@@ -25,17 +26,18 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  async function loadOrders() {
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("customerId");
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
-
-      // 🔐 Secure endpoint (JWT subject used server-side)
       const res = await apiFetch("/customer/my/orders");
-
-      if (!res.ok) {
-        throw new Error("Unauthorized");
-      }
-
+      if (!res.ok) throw new Error("Unauthorized");
       const data = await res.json();
       setOrders(data);
     } catch {
@@ -43,128 +45,143 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [handleLogout]);
 
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [loadOrders]);
 
-  function handleLogout() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("customerId");
-    navigate("/login", { replace: true });
-  }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Top Bar */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h4" color="white">
-          🧾 My Orders
-        </Typography>
-
-        <Button variant="outlined" color="error" onClick={handleLogout}>
-          Logout
-        </Button>
-      </Box>
-
-      {/* Refresh */}
-      <motion.div
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 100 }}
-        onDragEnd={loadOrders}
-      >
-        <Button variant="contained" sx={{ mb: 3 }}>
-          🔄 Slide Down to Refresh Orders
-        </Button>
-      </motion.div>
-
-      {loading && (
-        <Typography color="gray" mb={2}>
-          Loading orders...
-        </Typography>
-      )}
-
-      {/* Orders Grid */}
-      <Grid container spacing={3}>
-        {orders.map((o, index) => (
-          <Grid item xs={12} md={4} key={o.id}>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <Card
-                elevation={12}
-                sx={{
-                  borderRadius: 4,
-                  backdropFilter: "blur(10px)",
-                  background: "rgba(255,255,255,0.08)",
-                  color: "white",
-                  overflow: "hidden"
-                }}
+    <Box sx={{ minHeight: "100vh", bgcolor: "#020617", color: "white", py: 6, px: { xs: 2, md: 4 } }}>
+      <Container maxWidth="lg">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 6 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Button
+                onClick={() => navigate("/shopping")}
+                startIcon={<ArrowLeft size={18} />}
+                sx={{ color: "var(--text-secondary)", "&:hover": { color: "white" } }}
               >
-                <motion.img
-                  src={randomImage(index)}
-                  width="100%"
-                  height="180"
-                  style={{ objectFit: "cover" }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  alt={o.name}
-                />
+                Back to Store
+              </Button>
+            </Box>
+            <IconButton onClick={handleLogout} sx={{ color: "var(--accent)", bgcolor: "rgba(244, 63, 94, 0.1)", "&:hover": { bgcolor: "rgba(244, 63, 94, 0.2)" } }}>
+              <LogOut size={20} />
+            </IconButton>
+          </Box>
 
-                <CardContent>
-                  <Typography variant="h6">
-                    {o.name}
-                  </Typography>
+          <Box sx={{ mb: 6 }}>
+            <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, color: "white", letterSpacing: "-1px" }}>
+              My Orders
+            </Typography>
+            <Typography sx={{ color: "var(--text-secondary)" }}>
+              A premium history of your lifestyle choices.
+            </Typography>
+          </Box>
 
-                  <Typography color="gray">
-                    Quantity: {o.count}
-                  </Typography>
-
-                  <Typography color="gray">
-                    Price: ₹{o.price}
-                  </Typography>
-
-                  <Typography color="gray">
-                    Ordered At: {formatDate(o.createdAt)}
-                  </Typography>
-
+          <Grid container spacing={4}>
+            {loading ? (
+              Array.from({ length: 4 }).map((__, i) => (
+                <Grid item xs={12} sm={6} md={4} key={i}>
+                  <Skeleton variant="rectangular" height={450} sx={{ borderRadius: "32px", bgcolor: "rgba(255,255,255,0.05)" }} />
+                </Grid>
+              ))
+            ) : orders.length > 0 ? (
+              orders.map((o) => (
+                <Grid item xs={12} sm={6} md={4} key={o.id}>
                   <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mt={1}
+                    sx={{
+                      position: "relative",
+                      transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                      "&:hover": { transform: "translateY(-12px)" }
+                    }}
                   >
-                    <Chip
-                      label={o.status || "PLACED"}
-                      color="success"
-                      size="small"
-                    />
+                    {/* Photo Container */}
+                    <Box
+                      sx={{
+                        position: "relative",
+                        height: "400px",
+                        borderRadius: "32px",
+                        overflow: "hidden",
+                        bgcolor: "rgba(255,255,255,0.03)",
+                        mb: 2,
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        boxShadow: "0 10px 40px -15px rgba(0,0,0,0.5)"
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={o.image || `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>')}`}
+                        alt={o.name}
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover"
+                        }}
+                      />
 
-                    <Typography fontWeight="bold">
-                      Total: ₹{(o.price * o.count).toFixed(2)}
-                    </Typography>
+                      <Box sx={{
+                        position: "absolute",
+                        bottom: 16,
+                        right: 16,
+                      }}>
+                        <Chip
+                          label={o.status || "PLACED"}
+                          size="small"
+                          sx={{
+                            bgcolor: "rgba(2, 6, 23, 0.8)",
+                            backdropFilter: "blur(8px)",
+                            color: "var(--primary)",
+                            fontWeight: 900,
+                            fontSize: "0.7rem",
+                            border: "1px solid rgba(255,255,255,0.1)"
+                          }}
+                        />
+                      </Box>
+                    </Box>
+
+                    {/* Text Details */}
+                    <Box sx={{ px: 1 }}>
+                      <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.4)", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
+                        Quantity: {o.count}
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: "white", mb: 0.5 }}>
+                        {o.name}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "var(--text-secondary)", mb: 0.5 }}>
+                        {formatDate(o.createdAt)}
+                      </Typography>
+                      <Typography sx={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: "0.65rem",
+                        color: "var(--primary)",
+                        bgcolor: "rgba(34, 197, 94, 0.05)",
+                        px: 1, py: 0.5, borderRadius: "6px",
+                        display: "inline-block",
+                        mb: 2
+                      }}>
+                        #{o.id}
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 900, color: "var(--primary)" }}>
+                        ₹{o.price * o.count}
+                      </Typography>
+                    </Box>
                   </Box>
-                </CardContent>
-              </Card>
-            </motion.div>
+                </Grid>
+              ))
+            ) : (
+              <Box sx={{ width: "100%", py: 10, textAlign: "center" }}>
+                <Package size={64} style={{ color: "rgba(255,255,255,0.1)", marginBottom: 24 }} />
+                <Typography variant="h5" sx={{ color: "var(--text-secondary)", mb: 4 }}>No orders found yet</Typography>
+                <Button variant="contained" onClick={() => navigate("/shopping")} sx={{ px: 4, borderRadius: "50px" }}>
+                  Start Shopping
+                </Button>
+              </Box>
+            )}
           </Grid>
-        ))}
-
-        {!loading && orders.length === 0 && (
-          <Typography color="gray">
-            No orders yet. Start shopping 🛒
-          </Typography>
-        )}
-      </Grid>
+        </motion.div>
+      </Container>
     </Box>
   );
 }

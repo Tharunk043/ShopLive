@@ -1,404 +1,412 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion"; // eslint-disable-line
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "./api";
+import {
+  ShoppingBag,
+  LogOut,
+  Package,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  Truck,
+  ShoppingBasket,
+  ArrowLeft,
+  X
+} from "lucide-react";
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  Button,
+  IconButton,
+  Dialog,
+  DialogContent,
+  Skeleton,
+  Badge,
+  Chip
+} from "@mui/material";
 
-// =============================
-// DASHBOARD
-// =============================
+const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
+
 export default function Dashboard({ onLogout }) {
   const [orders, setOrders] = useState([]);
   const [images, setImages] = useState({});
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [animStep, setAnimStep] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
 
-  const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
 
-  useEffect(() => {
-    loadOrders();
-
-    const onFocus = () => loadOrders();
-    window.addEventListener("focus", onFocus);
-
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
-
-  // =============================
-  // STEP-BY-STEP TRACKER ANIMATION
-  // =============================
   useEffect(() => {
     if (!selectedOrder) return;
-
     const run = async () => {
       setAnimStep(0);
-
-      const targetIndex = STATUS_FLOW.indexOf(
-        (selectedOrder.status || "PLACED").toUpperCase()
-      );
-
+      const targetIndex = STATUS_FLOW.indexOf((selectedOrder.status || "PLACED").toUpperCase());
       for (let i = 0; i <= targetIndex; i++) {
         setAnimStep(i);
-        await new Promise((res) => setTimeout(res, 700));
+        await new Promise((res) => setTimeout(res, 600));
       }
     };
-
     run();
   }, [selectedOrder]);
 
-  // =============================
-  // LOAD PRODUCT IMAGE (JWT SAFE)
-  // =============================
-  async function loadProductImage(productId) {
+  const loadProductImage = useCallback(async (productId) => {
     try {
       const res = await apiFetch(`/products/${productId}/image`);
       if (!res.ok) throw new Error();
-
       const blob = await res.blob();
       return URL.createObjectURL(blob);
     } catch {
-      return "https://picsum.photos/300/200";
+      return null;
     }
-  }
+  }, []);
 
-  // =============================
-  // LOAD ORDERS
-  // =============================
-  async function loadOrders() {
-    try {
-      const res = await apiFetch("/customer/my/orders");
-      if (!res.ok) throw new Error("Unauthorized");
-
-      const data = await res.json();
-      setOrders(data);
-
-      setImages((prev) => {
-        const updated = { ...prev };
-
-        for (const o of data) {
-          if (!updated[o.productId]) {
-            loadProductImage(o.productId).then((url) => {
-              setImages((curr) => ({
-                ...curr,
-                [o.productId]: url
-              }));
-            });
-          }
-        }
-
-        return updated;
-      });
-    } catch {
-      logout();
-    }
-  }
-
-  // =============================
-  // LOGOUT
-  // =============================
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.clear();
     if (onLogout) onLogout();
     navigate("/login", { replace: true });
-  }
+  }, [navigate, onLogout]);
 
-  // =============================
-  // UI
-  // =============================
+  const loadOrders = useCallback(async () => {
+    try {
+      const res = await apiFetch("/customer/my/orders");
+      if (!res.ok) throw new Error("Unauthorized");
+      const data = await res.json();
+      setOrders(data);
+    } catch {
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  }, [logout]);
+
+  useEffect(() => {
+    loadOrders();
+    const onFocus = () => loadOrders();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadOrders]);
+
+  useEffect(() => {
+    orders.forEach(o => {
+      if (!images[o.productId]) {
+        loadProductImage(o.productId).then(url => {
+          if (url) {
+            setImages(prev => {
+              if (prev[o.productId]) return prev;
+              return { ...prev, [o.productId]: url };
+            });
+          }
+        });
+      }
+    });
+  }, [orders, loadProductImage]); // Removed images from dependencies to stop the loop
+
+  const getStatusColor = (status) => {
+    switch (status?.toUpperCase()) {
+      case "DELIVERED": return "#22c55e";
+      case "SHIPPED": return "#38bdf8";
+      case "CONFIRMED": return "#facc15";
+      case "CANCELLED": return "#f43f5e";
+      default: return "#94a3b8";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toUpperCase()) {
+      case "PLACED": return <Clock size={16} />;
+      case "CONFIRMED": return <CheckCircle2 size={16} />;
+      case "SHIPPED": return <Truck size={16} />;
+      case "DELIVERED": return <ShoppingBasket size={16} />;
+      default: return <Package size={16} />;
+    }
+  };
+
   return (
-    <div style={styles.page}>
-      <button onClick={logout} style={styles.logout}>
-        Logout
-      </button>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#020617", color: "white", py: 6 }}>
+      {/* 🌌 Background Orbs */}
+      <Box
+        sx={{
+          position: "fixed",
+          top: "-10%",
+          right: "-5%",
+          width: "600px",
+          height: "600px",
+          background: "var(--primary)",
+          filter: "blur(200px)",
+          opacity: 0.05,
+          zIndex: 0,
+          pointerEvents: "none"
+        }}
+      />
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: "-5%",
+          left: "-5%",
+          width: "500px",
+          height: "500px",
+          background: "var(--secondary)",
+          filter: "blur(180px)",
+          opacity: 0.05,
+          zIndex: 0,
+          pointerEvents: "none"
+        }}
+      />
 
-      <h1>📦 My Orders</h1>
-
-      <div style={styles.grid}>
-        {orders.map((o) => (
-          <motion.div
-            key={o.id}
-            whileHover={{ scale: 1.05 }}
-            onClick={() => setSelectedOrder(o)}
-            style={styles.card}
-          >
-            <img
-              src={
-                images[o.productId] ||
-                `${import.meta.env.VITE_API_BASE_URL}/products/${o.productId}/image`
-              }
-              alt={o.name}
-              style={styles.img}
-              loading="lazy"
-            />
-
-            <h3>{o.name}</h3>
-            <p>Qty: {o.count}</p>
-            <p>Price: ₹{o.price}</p>
-
-            <p>
-              Status:{" "}
-              <span
-                style={{
-                  color:
-                    o.status === "DELIVERED"
-                      ? "#22c55e"
-                      : o.status === "SHIPPED"
-                      ? "#38bdf8"
-                      : o.status === "CANCELLED"
-                      ? "#ef4444"
-                      : "#f59e0b"
-                }}
-              >
-                {(o.status || "PLACED").toUpperCase()}
-              </span>
-            </p>
-
-            <p style={styles.date}>
-              {new Date(o.createdAt).toLocaleString()}
-            </p>
-          </motion.div>
-        ))}
-
-        {orders.length === 0 && (
-          <p style={{ color: "#94a3b8" }}>
-            No orders yet. Start shopping 🛒
-          </p>
-        )}
-      </div>
-
-      {/* =============================
-          POPUP MODAL
-      ============================== */}
-      <AnimatePresence>
-        {selectedOrder && (
-          <motion.div
-            style={styles.overlay}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              style={styles.modal}
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 120 }}
+      <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
+        {/* HEADER */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 6 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Button
+              onClick={() => navigate("/shopping")}
+              startIcon={<ArrowLeft size={18} />}
+              sx={{ color: "var(--text-secondary)", "&:hover": { color: "white" } }}
             >
-              <button
-                style={styles.close}
-                onClick={() => setSelectedOrder(null)}
-              >
-                ✖
-              </button>
+              Back to Store
+            </Button>
+          </Box>
+          <IconButton onClick={logout} sx={{ color: "var(--accent)", bgcolor: "rgba(244, 63, 94, 0.1)", "&:hover": { bgcolor: "rgba(244, 63, 94, 0.2)" } }}>
+            <LogOut size={20} />
+          </IconButton>
+        </Box>
 
-              <h2>📦 Order Tracking</h2>
+        <Box sx={{ mb: 6 }}>
+          <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, letterSpacing: "-1px" }}>
+            My Orders
+          </Typography>
+          <Typography sx={{ color: "var(--text-secondary)" }}>
+            Track your premium purchases and order history
+          </Typography>
+        </Box>
 
-              {/* STATUS TRACKER */}
-              <div style={styles.tracker}>
-                {STATUS_FLOW.map((step, i) => {
-                  const reached = animStep >= i;
-                  const lineReached = animStep > i;
-                  const isLast =
-                    i === animStep &&
-                    i === STATUS_FLOW.length - 1;
-
-                  return (
-                    <div key={step} style={styles.step}>
-                      {/* CIRCLE */}
-                      <motion.div
-                        animate={
-                          isLast
-                            ? {
-                                scale: [1, 1.3, 1],
-                                boxShadow: [
-                                  "0 0 0px #22c55e",
-                                  "0 0 12px #22c55e",
-                                  "0 0 0px #22c55e"
-                                ],
-                                backgroundColor: "#22c55e"
-                              }
-                            : {
-                                scale: reached ? [1, 1.4, 1] : 1,
-                                backgroundColor: reached
-                                  ? "#22c55e"
-                                  : "#334155"
-                              }
-                        }
-                        transition={{
-                          duration: isLast ? 1.2 : 0.4,
-                          repeat: isLast ? Infinity : 0
+        {/* ORDERS GRID */}
+        <Grid container spacing={3}>
+          {loading ? (
+            Array.from({ length: 4 }).map((__, i) => (
+              <Grid item xs={12} sm={6} md={4} key={i}>
+                <Skeleton variant="rectangular" height={350} sx={{ borderRadius: "24px", bgcolor: "rgba(255,255,255,0.05)" }} />
+              </Grid>
+            ))
+          ) : orders.length > 0 ? (
+            orders.map((o) => (
+              <Grid item xs={12} sm={6} md={4} key={o.id}>
+                <motion.div
+                  whileHover={{ y: -8 }}
+                  onClick={() => setSelectedOrder(o)}
+                  className="glass-card"
+                  style={{ cursor: "pointer", height: "100%", overflow: "hidden" }}
+                >
+                  <Box sx={{ height: 400, position: "relative", bgcolor: "rgba(255,255,255,0.03)" }}>
+                    {!images[o.productId] ? (
+                      <Skeleton variant="rectangular" height="100%" width="100%" sx={{ bgcolor: "rgba(255,255,255,0.05)" }} />
+                    ) : (
+                      <Box
+                        component="img"
+                        src={images[o.productId]}
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          transition: "transform 0.8s ease",
+                          "&:hover": { transform: "scale(1.1)" }
                         }}
-                        style={styles.circle}
                       />
+                    )}
+                    <Box sx={{ position: "absolute", bottom: 12, right: 12 }}>
+                      <Chip
+                        icon={getStatusIcon(o.status)}
+                        label={(o.status || "PLACED").toUpperCase()}
+                        sx={{
+                          bgcolor: "rgba(15, 23, 42, 0.8)",
+                          backdropFilter: "blur(8px)",
+                          color: getStatusColor(o.status),
+                          fontWeight: 700,
+                          fontSize: "0.7rem",
+                          border: `1px solid ${getStatusColor(o.status)}33`
+                        }}
+                      />
+                    </Box>
+                  </Box>
 
-                      <span style={{ fontSize: "0.8rem" }}>
-                        {step}
-                      </span>
+                  <Box sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, noWrap: true }}>{o.name}</Typography>
+                    <Typography variant="body2" sx={{ color: "var(--text-secondary)", mb: 2 }}>
+                      Ordered on {new Date(o.createdAt).toLocaleDateString()}
+                    </Typography>
 
-                      {/* LINE */}
-                      {i < STATUS_FLOW.length - 1 && (
-                        <div style={styles.lineBase}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{
-                              width: lineReached ? "100%" : "0%"
-                            }}
-                            transition={{
-                              duration: 0.6,
-                              ease: "easeInOut"
-                            }}
-                            style={styles.lineFill}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: "var(--text-secondary)", display: "block" }}>Amount Paid</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 900 }}>₹{o.price}</Typography>
+                      </Box>
+                      <Button
+                        endIcon={<ChevronRight size={16} />}
+                        sx={{ textTransform: "none", fontWeight: 700, p: 0 }}
+                      >
+                        Details
+                      </Button>
+                    </Box>
+                  </Box>
+                </motion.div>
+              </Grid>
+            ))
+          ) : (
+            <Box sx={{ width: "100%", py: 10, textAlign: "center" }}>
+              <Package size={64} style={{ color: "var(--text-secondary)", opacity: 0.2, marginBottom: 16 }} />
+              <Typography variant="h5" sx={{ color: "var(--text-secondary)", mb: 3 }}>No orders found yet</Typography>
+              <Button variant="contained" onClick={() => navigate("/shopping")} sx={{ px: 4, borderRadius: "50px" }}>
+                Start Shopping
+              </Button>
+            </Box>
+          )}
+        </Grid>
+      </Container>
 
-              {/* ORDER DETAILS */}
-              <div style={styles.details}>
-                <p>
-                  <b>Order ID:</b> {selectedOrder.id}
-                </p>
-                <p>
-                  <b>Product:</b> {selectedOrder.name}
-                </p>
-                <p>
-                  <b>Quantity:</b> {selectedOrder.count}
-                </p>
-                <p>
-                  <b>Price:</b> ₹{selectedOrder.price}
-                </p>
-                <p>
-                  <b>Status:</b>{" "}
-                  {(selectedOrder.status || "PLACED").toUpperCase()}
-                </p>
-                <p>
-                  <b>Ordered On:</b>{" "}
-                  {new Date(
-                    selectedOrder.createdAt
-                  ).toLocaleString()}
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      {/* TRACKING DIALOG */}
+      <Dialog
+        open={Boolean(selectedOrder)}
+        onClose={() => setSelectedOrder(null)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: "32px",
+            bgcolor: "rgba(15, 23, 42, 0.95)",
+            backdropFilter: "blur(24px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            color: "white",
+            p: 1
+          }
+        }}
+      >
+        <DialogContent sx={{ p: 4 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
+            <Typography variant="h5" sx={{ fontWeight: 900 }}>Order Tracking</Typography>
+            <IconButton onClick={() => setSelectedOrder(null)} sx={{ color: "white" }}><X size={24} /></IconButton>
+          </Box>
+
+          {selectedOrder && (
+            <>
+              {/* VISUAL TRACKER */}
+              <Box sx={{ px: 2, mb: 10, mt: 4 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", position: "relative", px: 4 }}>
+                  {/* Modern Curved Progress Path */}
+                  <Box sx={{
+                    position: "absolute",
+                    top: 20,
+                    left: "10%",
+                    right: "10%",
+                    height: 2,
+                    bgcolor: "rgba(255,255,255,0.05)",
+                    zIndex: 0
+                  }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(animStep / (STATUS_FLOW.length - 1)) * 100}%` }}
+                      transition={{ duration: 1.5, ease: "anticipate" }}
+                      style={{
+                        height: "100%",
+                        background: "linear-gradient(90deg, var(--primary), #4ade80)",
+                        boxShadow: "0 0 20px var(--primary)",
+                        borderRadius: 10
+                      }}
+                    />
+                  </Box>
+
+                  {STATUS_FLOW.map((step, i) => {
+                    const isReached = animStep >= i;
+                    const isCurrent = animStep === i;
+                    return (
+                      <Box key={step} sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, zIndex: 1 }}>
+                        <motion.div
+                          initial={false}
+                          animate={{
+                            scale: isCurrent ? [1, 1.3, 1] : 1,
+                            borderColor: isReached ? "var(--primary)" : "rgba(255,255,255,0.1)",
+                            backgroundColor: isReached ? "var(--primary)" : "#020617",
+                            boxShadow: isCurrent ? "0 0 30px var(--primary)" : "none"
+                          }}
+                          transition={{ duration: 0.5 }}
+                          style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: "16px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "2px solid",
+                            background: "#020617",
+                            color: isReached ? "#020617" : "rgba(255,255,255,0.2)"
+                          }}
+                        >
+                          {getStatusIcon(step)}
+                        </motion.div>
+                        <Box sx={{ textAlign: "center" }}>
+                          <Typography variant="caption" sx={{
+                            fontWeight: 900,
+                            color: isReached ? "white" : "rgba(255,255,255,0.2)",
+                            fontSize: "0.65rem",
+                            letterSpacing: 1.5,
+                            textTransform: "uppercase",
+                            display: "block"
+                          }}>
+                            {step}
+                          </Typography>
+                          {isCurrent && (
+                            <motion.div
+                              layoutId="active-indicator"
+                              style={{
+                                width: 4, height: 4, borderRadius: "50%",
+                                bgcolor: "var(--primary)", margin: "8px auto 0"
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+
+              <Box sx={{ bgcolor: "rgba(255,255,255,0.03)", borderRadius: "24px", p: 3, border: "1px solid rgba(255,255,255,0.05)" }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" sx={{ color: "var(--text-secondary)", display: "block", mb: 0.5 }}>Order ID</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: "'JetBrains Mono', 'Roboto Mono', monospace", letterSpacing: -0.5, color: "var(--primary)" }}>#{selectedOrder.id}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" sx={{ color: "var(--text-secondary)", display: "block", mb: 0.5 }}>Items</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{selectedOrder.count}x {selectedOrder.name}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" sx={{ color: "var(--text-secondary)", display: "block", mb: 0.5 }}>Total Paid</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>₹{selectedOrder.price}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" sx={{ color: "var(--text-secondary)", display: "block", mb: 0.5 }}>Status</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: getStatusColor(selectedOrder.status) }}>
+                      {selectedOrder.status || "PLACED"}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => setSelectedOrder(null)}
+                sx={{ mt: 4, py: 1.5, borderRadius: "12px", borderColor: "rgba(255,255,255,0.1)", color: "white" }}
+              >
+                Close Tracking
+              </Button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Box>
   );
 }
-
-// =============================
-// STYLES
-// =============================
-const styles = {
-  page: {
-    padding: 40,
-    background: "#0f172a",
-    minHeight: "100vh",
-    color: "white"
-  },
-  logout: {
-    float: "right",
-    padding: "10px 20px",
-    background: "crimson",
-    color: "white",
-    border: "none",
-    borderRadius: 10,
-    cursor: "pointer"
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-    gap: 20,
-    marginTop: 30
-  },
-  card: {
-    background: "#1e293b",
-    borderRadius: 20,
-    padding: 20,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-    transition: "0.3s",
-    cursor: "pointer"
-  },
-  img: {
-    width: "100%",
-    height: "180px",
-    objectFit: "cover",
-    borderRadius: 15,
-    marginBottom: 10
-  },
-  date: {
-    color: "#94a3b8",
-    fontSize: "0.8rem"
-  },
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    background: "rgba(0,0,0,0.7)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 999
-  },
-  modal: {
-    background: "#020617",
-    borderRadius: 20,
-    padding: 30,
-    width: "90%",
-    maxWidth: 500,
-    boxShadow: "0 30px 80px rgba(0,0,0,0.8)"
-  },
-  close: {
-    float: "right",
-    background: "transparent",
-    color: "white",
-    border: "none",
-    fontSize: "1.2rem",
-    cursor: "pointer"
-  },
-  tracker: {
-    display: "flex",
-    justifyContent: "space-between",
-    margin: "30px 0"
-  },
-  step: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    position: "relative",
-    flex: 1
-  },
-  circle: {
-    width: 18,
-    height: 18,
-    borderRadius: "50%",
-    marginBottom: 5,
-    zIndex: 2
-  },
-  details: {
-    background: "#0f172a",
-    padding: 20,
-    borderRadius: 15
-  },
-  lineBase: {
-    position: "absolute",
-    top: 10,
-    left: "50%",
-    width: "100%",
-    height: 4,
-    background: "#334155",
-    borderRadius: 5,
-    overflow: "hidden"
-  },
-  lineFill: {
-    height: "100%",
-    background: "#22c55e",
-    borderRadius: 5
-  }
-};
