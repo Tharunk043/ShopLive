@@ -3,7 +3,7 @@ import { motion } from "framer-motion"; // eslint-disable-line
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import Particles from "react-tsparticles";
-import { loadSlim } from "tsparticles-slim";
+import { loadSlim } from "@tsparticles/slim";
 import Typewriter from "typewriter-effect";
 
 import {
