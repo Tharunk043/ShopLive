@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion"; // eslint-disable-line
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "./api";
+import SockJS from "sockjs-client/dist/sockjs";
+import { Client } from "@stomp/stompjs";
 import {
   ShoppingBag,
   LogOut,
@@ -33,25 +35,70 @@ const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
 export default function Dashboard({ onLogout }) {
   const [orders, setOrders] = useState([]);
   const [images, setImages] = useState({});
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [animStep, setAnimStep] = useState(0);
   const [loading, setLoading] = useState(true);
+  const selectedOrder = orders.find(
+  o => (o.id || o._id) === selectedOrderId
+);  
 
   const navigate = useNavigate();
 
 
-  useEffect(() => {
-    if (!selectedOrder) return;
-    const run = async () => {
-      setAnimStep(0);
-      const targetIndex = STATUS_FLOW.indexOf((selectedOrder.status || "PLACED").toUpperCase());
-      for (let i = 0; i <= targetIndex; i++) {
-        setAnimStep(i);
-        await new Promise((res) => setTimeout(res, 600));
+useEffect(() => {
+  if (!selectedOrder?.status) return;
+
+  const targetIndex = STATUS_FLOW.indexOf(
+    selectedOrder.status.toUpperCase()
+  );
+
+  if (targetIndex === -1) return;
+
+  if (targetIndex > animStep) {
+    let current = animStep;
+
+    const interval = setInterval(() => {
+      current++;
+      setAnimStep(current);
+
+      if (current >= targetIndex) {
+        clearInterval(interval);
       }
-    };
-    run();
-  }, [selectedOrder]);
+    }, 500);
+
+    return () => clearInterval(interval);
+  }
+
+}, [selectedOrder?.status]);
+  useEffect(() => {
+  const socket = new SockJS("https://demo-springboot-zdym.onrender.com/ws");
+  const stompClient = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+  });
+
+  stompClient.onConnect = () => {
+    console.log("WebSocket Connected");
+
+    stompClient.subscribe("/topic/order-status", (message) => {
+  const update = JSON.parse(message.body);
+
+  setOrders(prev =>
+    prev.map(order =>
+      (order.id || order._id) === update.orderId
+        ? { ...order, status: update.status }
+        : order
+    )
+  );
+});
+  };
+
+  stompClient.activate();
+
+  return () => {
+    stompClient.deactivate();
+  };
+}, []);
 
   const loadProductImage = useCallback(async (productId) => {
     try {
@@ -124,6 +171,18 @@ export default function Dashboard({ onLogout }) {
       default: return <Package size={16} />;
     }
   };
+  
+useEffect(() => {
+  if (!selectedOrder?.status) return;
+
+  const index = STATUS_FLOW.indexOf(
+    selectedOrder.status.toUpperCase()
+  );
+
+  if (index !== -1) {
+    setAnimStep(index);
+  }
+}, [selectedOrderId]);
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#020617", color: "white", py: 6 }}>
@@ -196,7 +255,7 @@ export default function Dashboard({ onLogout }) {
               <Grid item xs={12} sm={6} md={4} key={o.id}>
                 <motion.div
                   whileHover={{ y: -8 }}
-                  onClick={() => setSelectedOrder(o)}
+                  onClick={() => setSelectedOrderId(o.id || o._id)}
                   className="glass-card"
                   style={{ cursor: "pointer", height: "100%", overflow: "hidden" }}
                 >
@@ -269,7 +328,7 @@ export default function Dashboard({ onLogout }) {
       {/* TRACKING DIALOG */}
       <Dialog
         open={Boolean(selectedOrder)}
-        onClose={() => setSelectedOrder(null)}
+        onClose={() => setSelectedOrderId(null)}
         fullWidth
         maxWidth="sm"
         PaperProps={{
@@ -286,7 +345,7 @@ export default function Dashboard({ onLogout }) {
         <DialogContent sx={{ p: 4 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
             <Typography variant="h5" sx={{ fontWeight: 900 }}>Order Tracking</Typography>
-            <IconButton onClick={() => setSelectedOrder(null)} sx={{ color: "white" }}><X size={24} /></IconButton>
+            <IconButton onClick={() => setSelectedOrderId(null)} sx={{ color: "white" }}><X size={24} /></IconButton>
           </Box>
 
           {selectedOrder && (
@@ -398,7 +457,7 @@ export default function Dashboard({ onLogout }) {
               <Button
                 fullWidth
                 variant="outlined"
-                onClick={() => setSelectedOrder(null)}
+                onClick={() => setSelectedOrderId(null)}
                 sx={{ mt: 4, py: 1.5, borderRadius: "12px", borderColor: "rgba(255,255,255,0.1)", color: "white" }}
               >
                 Close Tracking
