@@ -805,4 +805,4 @@ export default function Shopping() {
       </Dialog>
     </Box>
   );
-}
+};

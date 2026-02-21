@@ -45,6 +45,26 @@ function formatDate(d) {
 export default function Admin() {
   const [stats, setStats] = useState({ customers: 0, orders: 0, products: 0 });
   const [customers, setCustomers] = useState([]);
+    const [searchUser, setSearchUser] = useState("");
+const [currentPage, setCurrentPage] = useState(1);
+const pageSize = 10;
+// 🔎 Filter users by search
+const filteredCustomers = customers.filter((c) =>
+  c.name.toLowerCase().includes(searchUser.toLowerCase())
+);
+
+// 📄 Pagination calculation
+const totalPages = Math.ceil(filteredCustomers.length / pageSize);
+
+const paginatedCustomers = filteredCustomers.slice(
+  (currentPage - 1) * pageSize,
+  currentPage * pageSize
+);
+
+// 🔄 Reset page when searching
+useEffect(() => {
+  setCurrentPage(1);
+}, [searchUser]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -274,45 +294,130 @@ export default function Admin() {
             </Box>
 
             {/* CUSTOMERS TABLE */}
-            <Box className="glass-panel" sx={{ overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <Box sx={{ p: 4, borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="h5" sx={{ fontWeight: 900 }}>Member Registry</Typography>
-                <Chip label={`${customers.length} Verified`} size="small" sx={{ bgcolor: "var(--secondary)15", color: "var(--secondary)", fontWeight: 800 }} />
-              </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: "rgba(255,255,255,0.01)" }}>
-                      <TableCell sx={{ color: "var(--text-secondary)", fontWeight: 800, border: 0, textTransform: "uppercase", fontSize: "0.7rem", letterSpacing: 1 }}>Account</TableCell>
-                      <TableCell align="right" sx={{ color: "var(--text-secondary)", fontWeight: 800, border: 0, textTransform: "uppercase", fontSize: "0.7rem", letterSpacing: 1 }}>Control</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {customers.map((c) => (
-                      <TableRow key={c.id} sx={{ "&:hover": { bgcolor: "rgba(255,255,255,0.02)" } }}>
-                        <TableCell sx={{ color: "white", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-                            <Box sx={{ width: 48, height: 48, borderRadius: "16px", bgcolor: "var(--secondary)15", color: "var(--secondary)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900 }}>
-                              {c.name.charAt(0)}
-                            </Box>
-                            <Box>
-                              <Typography sx={{ fontWeight: 800 }}>{c.name}</Typography>
-                              <Typography variant="caption" sx={{ color: "var(--text-secondary)" }}>ID: #{c.id.slice(0, 8).toUpperCase()}</Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right" sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                          <Button size="small" onClick={() => viewOrders(c.id)} sx={{ mr: 2, fontWeight: 800, color: "var(--primary)" }}>History</Button>
-                          <IconButton size="small" sx={{ color: "rgba(244, 63, 94, 0.4)", "&:hover": { color: "var(--accent)" } }} onClick={() => deleteCustomer(c.id)}>
-                            <Trash2 size={20} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
+            {/* CUSTOMERS TABLE */}
+<Box className="glass-panel" sx={{ overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+
+  {/* Header */}
+  <Box sx={{ p: 4, borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <Typography variant="h5" sx={{ fontWeight: 900 }}>Member Registry</Typography>
+    <Chip
+      label={`${filteredCustomers.length} Users`}
+      size="small"
+      sx={{ bgcolor: "var(--secondary)15", color: "var(--secondary)", fontWeight: 800 }}
+    />
+  </Box>
+
+  {/* Search Bar */}
+  <Box sx={{ p: 3, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+    <TextField
+      fullWidth
+      placeholder="Search users..."
+      value={searchUser}
+      onChange={(e) => setSearchUser(e.target.value)}
+      sx={inputStyles}
+    />
+  </Box>
+
+  <TableContainer>
+    <Table>
+      <TableHead>
+        <TableRow sx={{ bgcolor: "rgba(255,255,255,0.01)" }}>
+          <TableCell sx={{ color: "var(--text-secondary)", fontWeight: 800, border: 0 }}>
+            Account
+          </TableCell>
+          <TableCell align="right" sx={{ color: "var(--text-secondary)", fontWeight: 800, border: 0 }}>
+            Control
+          </TableCell>
+        </TableRow>
+      </TableHead>
+
+      <TableBody>
+        {paginatedCustomers.length > 0 ? (
+          paginatedCustomers.map((c) => (
+            <TableRow key={c.id} sx={{ "&:hover": { bgcolor: "rgba(255,255,255,0.02)" } }}>
+              <TableCell sx={{ color: "white", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: "16px",
+                      bgcolor: "var(--secondary)15",
+                      color: "var(--secondary)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 900
+                    }}
+                  >
+                    {c.name.charAt(0)}
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontWeight: 800 }}>{c.name}</Typography>
+                    <Typography variant="caption" sx={{ color: "var(--text-secondary)" }}>
+                      ID: #{c.id.slice(0, 8).toUpperCase()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </TableCell>
+
+              <TableCell align="right" sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                <Button size="small" onClick={() => viewOrders(c.id)} sx={{ mr: 2, fontWeight: 800, color: "var(--primary)" }}>
+                  History
+                </Button>
+                <IconButton
+                  size="small"
+                  sx={{ color: "rgba(244, 63, 94, 0.4)", "&:hover": { color: "var(--accent)" } }}
+                  onClick={() => deleteCustomer(c.id)}
+                >
+                  <Trash2 size={20} />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={2} align="center" sx={{ py: 4, color: "var(--text-secondary)" }}>
+              No users found.
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  </TableContainer>
+
+  {/* Pagination */}
+  {totalPages > 1 && (
+    <Box sx={{ p: 3, display: "flex", justifyContent: "center", gap: 1, flexWrap: "wrap" }}>
+      <Button
+        size="small"
+        disabled={currentPage === 1}
+        onClick={() => setCurrentPage(prev => prev - 1)}
+      >
+        Prev
+      </Button>
+
+      {Array.from({ length: totalPages }, (_, i) => (
+        <Button
+          key={i}
+          size="small"
+          variant={currentPage === i + 1 ? "contained" : "outlined"}
+          onClick={() => setCurrentPage(i + 1)}
+        >
+          {i + 1}
+        </Button>
+      ))}
+
+      <Button
+        size="small"
+        disabled={currentPage === totalPages}
+        onClick={() => setCurrentPage(prev => prev + 1)}
+      >
+        Next
+      </Button>
+    </Box>
+  )}
+</Box>
           </Grid>
 
           <Grid item xs={12} lg={4}>
