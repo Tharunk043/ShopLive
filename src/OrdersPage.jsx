@@ -84,7 +84,16 @@ export default function OrdersPage() {
             {loading ? (
               Array.from({ length: 4 }).map((__, i) => (
                 <Grid item xs={12} sm={6} md={4} key={i}>
-                  <Skeleton variant="rectangular" height={450} sx={{ borderRadius: "32px", bgcolor: "rgba(255,255,255,0.05)" }} />
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <Skeleton variant="rectangular" height={400} animation="wave" sx={{ borderRadius: "32px", bgcolor: "rgba(255,255,255,0.05)" }} />
+                    <Box sx={{ px: 1, mt: 1 }}>
+                      <Skeleton variant="text" width="35%" animation="wave" sx={{ bgcolor: "rgba(255,255,255,0.05)" }} />
+                      <Skeleton variant="text" width="70%" height={28} animation="wave" sx={{ bgcolor: "rgba(255,255,255,0.05)", mt: -0.5 }} />
+                      <Skeleton variant="text" width="45%" animation="wave" sx={{ bgcolor: "rgba(255,255,255,0.05)" }} />
+                      <Skeleton variant="rectangular" width="25%" height={20} animation="wave" sx={{ borderRadius: "6px", bgcolor: "rgba(255,255,255,0.05)", mt: 0.5, mb: 1 }} />
+                      <Skeleton variant="text" width="30%" height={32} animation="wave" sx={{ bgcolor: "rgba(255,255,255,0.05)" }} />
+                    </Box>
+                  </Box>
                 </Grid>
               ))
             ) : orders.length > 0 ? (
