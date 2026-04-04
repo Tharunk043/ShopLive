@@ -42,6 +42,17 @@ export default function Register() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    if (!form.name || form.name.trim().length < 3) {
+      setError("Username must be at least 3 characters long.");
+      return;
+    }
+
+    if (!form.password || form.password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
     setLoading(true);
 
     try {
