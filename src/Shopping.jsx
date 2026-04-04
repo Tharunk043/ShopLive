@@ -122,7 +122,20 @@ export default function Shopping() {
     if (!token) {
       logout();
       return;
-    };
+    }
+
+    try {
+      const cachedProducts = localStorage.getItem("cached_products");
+      if (cachedProducts) {
+        const parsed = JSON.parse(cachedProducts);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProducts(parsed);
+          setLoading(false);
+        }
+      }
+    } catch {
+      // ignore cache parsing errors
+    }
 
     fetch(API_PRODUCTS, {
       headers: { Authorization: `Bearer ${token}` }
@@ -138,6 +151,11 @@ export default function Shopping() {
         if (Array.isArray(data)) {
           setProducts(data);
           setLoading(false);
+          try {
+            localStorage.setItem("cached_products", JSON.stringify(data));
+          } catch {
+            // ignore storage errors like quota exceeded
+          }
         } else {
           setLoading(false);
           console.error("API did not return an array:", data);
