@@ -45,26 +45,16 @@ function formatDate(d) {
 export default function Admin() {
   const [stats, setStats] = useState({ customers: 0, orders: 0, products: 0 });
   const [customers, setCustomers] = useState([]);
-    const [searchUser, setSearchUser] = useState("");
-const [currentPage, setCurrentPage] = useState(1);
-const pageSize = 10;
-// 🔎 Filter users by search
-const filteredCustomers = customers.filter((c) =>
-  c.name.toLowerCase().includes(searchUser.toLowerCase())
-);
+  const [searchUser, setSearchUser] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const pageSize = 10;
 
-// 📄 Pagination calculation
-const totalPages = Math.ceil(filteredCustomers.length / pageSize);
-
-const paginatedCustomers = filteredCustomers.slice(
-  (currentPage - 1) * pageSize,
-  currentPage * pageSize
-);
-
-// 🔄 Reset page when searching
-useEffect(() => {
-  setCurrentPage(1);
-}, [searchUser]);
+  // 🔄 Reset page when searching
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchUser]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -114,9 +104,14 @@ useEffect(() => {
     if (res) setStats(await res.json());
   }, [safeFetch]);
 
-  const loadCustomers = useCallback(async () => {
-    const res = await safeFetch(`${API}/customers`);
-    if (res) setCustomers(await res.json());
+  const loadCustomers = useCallback(async (page = 1, search = "") => {
+    const res = await safeFetch(`${API}/customers?page=${page - 1}&size=${pageSize}&search=${encodeURIComponent(search)}`);
+    if (res) {
+      const data = await res.json();
+      setCustomers(data.content || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalCustomers(data.totalElements || 0);
+    }
   }, [safeFetch]);
 
   const loadProducts = useCallback(async () => {
@@ -128,11 +123,18 @@ useEffect(() => {
     if (!token) return;
     const init = async () => {
       await loadStats();
-      await loadCustomers();
       await loadProducts();
     };
     init();
-  }, [token, loadStats, loadCustomers, loadProducts]);
+  }, [token, loadStats, loadProducts]);
+
+  useEffect(() => {
+    if (!token) return;
+    const delay = setTimeout(() => {
+      loadCustomers(currentPage, searchUser);
+    }, 400);
+    return () => clearTimeout(delay);
+  }, [token, currentPage, searchUser, loadCustomers]);
 
   async function viewOrders(customerId) {
     const res = await safeFetch(`${API}/customers/${customerId}/orders`);
@@ -145,7 +147,7 @@ useEffect(() => {
     if (!window.confirm("Delete customer and ALL orders?")) return;
     const res = await safeFetch(`${API}/customers/${id}`, { method: "DELETE" });
     if (!res) return;
-    loadCustomers();
+    loadCustomers(currentPage, searchUser);
     loadStats();
   }
 
@@ -301,7 +303,7 @@ useEffect(() => {
   <Box sx={{ p: 4, borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
     <Typography variant="h5" sx={{ fontWeight: 900 }}>Member Registry</Typography>
     <Chip
-      label={`${filteredCustomers.length} Users`}
+      label={`${totalCustomers} Users`}
       size="small"
       sx={{ bgcolor: "var(--secondary)15", color: "var(--secondary)", fontWeight: 800 }}
     />
@@ -332,8 +334,8 @@ useEffect(() => {
       </TableHead>
 
       <TableBody>
-        {paginatedCustomers.length > 0 ? (
-          paginatedCustomers.map((c) => (
+        {customers.length > 0 ? (
+          customers.map((c) => (
             <TableRow key={c.id} sx={{ "&:hover": { bgcolor: "rgba(255,255,255,0.02)" } }}>
               <TableCell sx={{ color: "white", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
