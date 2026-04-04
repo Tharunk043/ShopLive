@@ -6,7 +6,8 @@ import {
   Button,
   Box,
   Container,
-  Typography
+  Typography,
+  Skeleton
 } from "@mui/material";
 
 const slides = [
@@ -29,9 +30,18 @@ const slides = [
 
 export default function LandingPage() {
   const [index, setIndex] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
+    slides.forEach((slide) => {
+      const img = new Image();
+      img.src = slide.image;
+      img.onload = () => {
+        setImagesLoaded((prev) => ({ ...prev, [slide.image]: true }));
+      };
+    });
+
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % slides.length);
     }, 5000);
@@ -96,21 +106,44 @@ export default function LandingPage() {
       {/* ===================== */}
       <Box sx={{ position: "relative", height: "100vh", overflow: "hidden" }}>
         <AnimatePresence mode="wait">
-          <motion.div
-            key={slides[index].image}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2 }}
-            style={{
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              backgroundImage: `linear-gradient(to bottom, rgba(2, 6, 23, 0.4), rgba(2, 6, 23, 0.9)), url(${slides[index].image})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center"
-            }}
-          />
+          {imagesLoaded[slides[index].image] ? (
+            <motion.div
+              key={slides[index].image}
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2 }}
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: "100%",
+                backgroundImage: `linear-gradient(to bottom, rgba(2, 6, 23, 0.4), rgba(2, 6, 23, 0.9)), url(${slides[index].image})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center"
+              }}
+            />
+          ) : (
+            <motion.div
+              key={`skeleton-${index}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2 }}
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: "100%"
+              }}
+            >
+              <Skeleton 
+                variant="rectangular" 
+                width="100%" 
+                height="100%" 
+                animation="wave" 
+                sx={{ bgcolor: "rgba(255,255,255,0.05)" }}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
 
         <Container

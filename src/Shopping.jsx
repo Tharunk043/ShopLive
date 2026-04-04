@@ -419,19 +419,36 @@ export default function Shopping() {
             </Typography>
           </Box>
 
-          {!search.trim() && carouselSlides.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-              <Box sx={{ mb: 10 }}>
-                <ModernCarousel slides={carouselSlides} onProductClick={(id) => setSelected(products.find(p => getId(p) === id))} />
-              </Box>
-            </motion.div>
+          {loading ? (
+            <Box sx={{ mb: 10 }}>
+              <Skeleton variant="rectangular" height={500} animation="wave" sx={{ borderRadius: "40px", bgcolor: "rgba(255,255,255,0.05)", width: "100%", display: { xs: "none", md: "block" } }} />
+              <Skeleton variant="rectangular" height={300} animation="wave" sx={{ borderRadius: "40px", bgcolor: "rgba(255,255,255,0.05)", width: "100%", display: { xs: "block", md: "none" } }} />
+            </Box>
+          ) : (
+            !search.trim() && carouselSlides.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+                <Box sx={{ mb: 10 }}>
+                  <ModernCarousel slides={carouselSlides} onProductClick={(id) => setSelected(products.find(p => getId(p) === id))} />
+                </Box>
+              </motion.div>
+            )
           )}
 
           <Grid container spacing={4}>
             {loading ? (
               Array.from({ length: 8 }).map((__, i) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
-                  <Skeleton variant="rectangular" height={420} sx={{ borderRadius: "24px", bgcolor: "rgba(255,255,255,0.05)" }} />
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <Skeleton variant="rectangular" height={400} animation="wave" sx={{ borderRadius: "32px", bgcolor: "rgba(255,255,255,0.05)" }} />
+                    <Box sx={{ px: 1, mt: 1 }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                        <Skeleton variant="text" width="30%" animation="wave" sx={{ bgcolor: "rgba(255,255,255,0.05)" }} />
+                        <Skeleton variant="text" width="20%" animation="wave" sx={{ bgcolor: "rgba(255,255,255,0.05)" }} />
+                      </Box>
+                      <Skeleton variant="text" width="80%" height={32} animation="wave" sx={{ bgcolor: "rgba(255,255,255,0.05)", mb: 1 }} />
+                      <Skeleton variant="rectangular" height={40} animation="wave" sx={{ borderRadius: "15px", bgcolor: "rgba(255,255,255,0.05)", mt: 1.5 }} />
+                    </Box>
+                  </Box>
                 </Grid>
               ))
             ) : filteredProducts.length > 0 ? (
